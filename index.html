@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>SmartTools Hub - Free Online Tools</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f7fb;
+      color: #172033;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0057ff, #00b894);
+      color: white;
+      padding: 22px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    nav a {
+      color: white;
+      margin-left: 18px;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hero {
+      padding: 80px 7%;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 30px;
+      align-items: center;
+      background: white;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      margin: 0 0 15px;
+    }
+
+    .hero p {
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .hero-card {
+      background: #0f172a;
+      color: white;
+      padding: 30px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    }
+
+    .btn {
+      border: none;
+      padding: 12px 18px;
+      background: #0057ff;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+
+    .btn.green {
+      background: #00b894;
+    }
+
+    .btn.dark {
+      background: #111827;
+    }
+
+    .btn.red {
+      background: #e11d48;
+    }
+
+    .section {
+      padding: 50px 7%;
+    }
+
+    .section-title {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .output {
+      background: #f1f5f9;
+      padding: 13px;
+      border-radius: 10px;
+      margin-top: 10px;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .auth-box {
+      max-width: 520px;
+      margin: auto;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #dcfce7;
+      color: #166534;
+      border-radius: 999px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .ad-box {
+      background: repeating-linear-gradient(
+        45deg,
+        #f8fafc,
+        #f8fafc 10px,
+        #e2e8f0 10px,
+        #e2e8f0 20px
+      );
+      border: 2px dashed #94a3b8;
+      padding: 35px;
+      text-align: center;
+      border-radius: 18px;
+      color: #475569;
+      font-weight: bold;
+      margin: 25px 0;
+    }
+
+    footer {
+      background: #020617;
+      color: white;
+      padding: 35px 7%;
+      text-align: center;
+    }
+
+    img.qr {
+      width: 200px;
+      margin-top: 12px;
+    }
+
+    @media(max-width: 900px) {
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 34px;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">SmartTools Hub</div>
+  <nav>
+    <a onclick="showSection('home')">Home</a>
+    <a onclick="showSection('tools')">Tools</a>
+    <a onclick="showSection('premium')">Premium</a>
+    <a onclick="showSection('contact')">Contact</a>
+    <a onclick="showSection('auth')" id="authNav">Login</a>
+    <a onclick="logout()" id="logoutNav" class="hidden">Logout</a>
+  </nav>
+</header>
+
+<section id="home" class="page">
+  <div class="hero">
+    <div>
+      <span class="badge">Free tools + premium upgrade system</span>
+      <h1>Powerful Online Tools That Can Earn Through Traffic</h1>
+      <p>
+        Compress images, merge PDFs, generate QR codes, count words, create passwords,
+        resize images and more. This website is built like a real SaaS product with users,
+        database, usage limits, premium plans and analytics.
+      </p>
+      <button class="btn" onclick="showSection('tools')">Start Using Tools</button>
+      <button class="btn green" onclick="showSection('auth')">Create Account</button>
+    </div>
+
+    <div class="hero-card">
+      <h2>Monetization Ready</h2>
+      <p>✔ AdSense spaces</p>
+      <p>✔ Free daily limits</p>
+      <p>✔ Premium plan</p>
+      <p>✔ M-Pesa backend route</p>
+      <p>✔ Admin analytics API</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="ad-box">Google AdSense Banner Space</div>
+
+    <h2 class="section-title">Why This Can Make Money</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>SEO Traffic</h3>
+        <p>People search for free tools every day: image compressor, PDF merger, QR generator and more.</p>
+      </div>
+
+      <div class="card">
+        <h3>Ads Revenue</h3>
+        <p>Free users can see ads while using the tools. More traffic means more revenue.</p>
+      </div>
+
+      <div class="card">
+        <h3>Premium Users</h3>
+        <p>Charge users for no ads, higher limits, bigger uploads and faster processing.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="auth" class="page hidden">
+  <div class="section">
+    <div class="auth-box card">
+      <h2>Login / Signup</h2>
+
+      <input id="authName" placeholder="Name for signup" />
+      <input id="authEmail" placeholder="Email" />
+      <input id="authPassword" type="password" placeholder="Password" />
+
+      <button class="btn green" onclick="signup()">Signup</button>
+      <button class="btn" onclick="login()">Login</button>
+
+      <div id="authOutput" class="output"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tools" class="page hidden">
+  <div class="section">
+    <h2 class="section-title">Free Tools Dashboard</h2>
+
+    <div class="ad-box">Ad Space Between Tools</div>
+
+    <div class="grid">
+
+      <div class="card">
+        <h3>Password Generator</h3>
+        <input id="passwordLength" type="number" value="16" />
+        <button class="btn" onclick="generatePassword()">Generate</button>
+        <div id="passwordOutput" class="output"></div>
+      </div>
+
+      <div class="card">
+        <h3>QR Code Generator</h3>
+        <input id="qrText" placeholder="Enter text or URL" />
+        <button class="btn" onclick="generateQR()">Generate QR</button>
+        <div id="qrOutput"></div>
+      </div>
+
+      <div class="card">
+        <h3>Word Counter</h3>
+        <textarea id="wordText" placeholder="Paste text here"></textarea>
+        <button class="btn" onclick="textStats()">Analyze Text</button>
+        <div id="wordOutput" class="output"></div>
+      </div>
+
+      <div class="card">
+        <h3>Text Case Converter</h3>
+        <textarea id="caseText" placeholder="Enter text"></textarea>
+        <select id="caseMode">
+          <option value="upper">UPPERCASE</option>
+          <option value="lower">lowercase</option>
+          <option value="title">Title Case</option>
+          <option value="sentence">Sentence case</option>
+        </select>
+        <button class="btn" onclick="convertCase()">Convert</button>
+        <div id="caseOutput" class="output"></div>
+      </div>
+
+      <div class="card">
+        <h3>Image Compressor</h3>
+        <input id="compressImage" type="file" accept="image/*" />
+        <input id="imageQuality" type="number" value="65" placeholder="Quality 10-95" />
+        <button class="btn" onclick="compressImage()">Compress</button>
+        <div class="output">Downloads compressed JPG automatically.</div>
+      </div>
+
+      <div class="card">
+        <h3>Image Resizer</h3>
+        <input id="resizeImage" type="file" accept="image/*" />
+        <input id="resizeWidth" type="number" value="800" placeholder="Width" />
+        <input id="resizeHeight" type="number" value="800" placeholder="Height" />
+        <button class="btn" onclick="resizeImage()">Resize</button>
+        <div class="output">Downloads resized JPG automatically.</div>
+      </div>
+
+      <div class="card">
+        <h3>PDF Merger</h3>
+        <input id="pdfFiles" type="file" accept="application/pdf" multiple />
+        <button class="btn" onclick="mergePDF()">Merge PDFs</button>
+        <div class="output">Upload at least 2 PDFs.</div>
+      </div>
+
+      <div class="card">
+        <h3>Loan Calculator</h3>
+        <input id="loanAmount" type="number" placeholder="Loan amount" />
+        <input id="loanRate" type="number" placeholder="Annual interest rate %" />
+        <input id="loanMonths" type="number" placeholder="Months" />
+        <button class="btn" onclick="loanCalculator()">Calculate</button>
+        <div id="loanOutput" class="output"></div>
+      </div>
+
+      <div class="card">
+        <h3>JSON Formatter</h3>
+        <textarea id="jsonInput" placeholder='{"name":"Collins"}'></textarea>
+        <button class="btn" onclick="formatJSON()">Format</button>
+        <div id="jsonOutput" class="output"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="premium" class="page hidden">
+  <div class="section">
+    <h2 class="section-title">Premium Plan</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Free</h3>
+        <p>Daily tool limit</p>
+        <p>Ads visible</p>
+        <p>Small uploads</p>
+        <button class="btn dark">Current Basic Plan</button>
+      </div>
+
+      <div class="card">
+        <h3>Premium</h3>
+        <p>No ads</p>
+        <p>Higher daily limits</p>
+        <p>Bigger uploads</p>
+        <p>Priority tools</p>
+
+        <input id="mpesaPhone" placeholder="2547XXXXXXXX" />
+        <input id="mpesaAmount" type="number" value="100" />
+
+        <button class="btn green" onclick="payWithMpesa()">Pay With M-Pesa</button>
+        <div id="premiumOutput" class="output"></div>
+      </div>
+
+      <div class="card">
+        <h3>Business</h3>
+        <p>For teams, schools, cyber cafes and offices.</p>
+        <p>Can be added later with invoice billing.</p>
+        <button class="btn">Coming Soon</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="page hidden">
+  <div class="section">
+    <div class="card auth-box">
+      <h2>Contact / Feedback</h2>
+      <input id="feedbackName" placeholder="Your name" />
+      <input id="feedbackEmail" placeholder="Your email" />
+      <textarea id="feedbackMessage" placeholder="Message"></textarea>
+      <button class="btn" onclick="sendFeedback()">Send</button>
+      <div id="feedbackOutput" class="output"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2026 SmartTools Hub. Built for real-world monetization.</p>
+</footer>
+
+<script>
+  const API = window.location.origin;
+  let token = localStorage.getItem("smarttools_token");
+  let currentUser = JSON.parse(localStorage.getItem("smarttools_user") || "null");
+
+  function headersJSON() {
+    const h = {
+      "Content-Type": "application/json"
+    };
+
+    if (token) h.Authorization = "Bearer " + token;
+
+    return h;
+  }
+
+  function authHeader() {
+    return token ? { Authorization: "Bearer " + token } : {};
+  }
+
+  function updateNav() {
+    if (token) {
+      document.getElementById("authNav").classList.add("hidden");
+      document.getElementById("logoutNav").classList.remove("hidden");
+    } else {
+      document.getElementById("authNav").classList.remove("hidden");
+      document.getElementById("logoutNav").classList.add("hidden");
+    }
+  }
+
+  updateNav();
+
+  function showSection(id) {
+    document.querySelectorAll(".page").forEach(page => {
+      page.classList.add("hidden");
+    });
+
+    document.getElementById(id).classList.remove("hidden");
+  }
+
+  async function signup() {
+    const name = document.getElementById("authName").value;
+    const email = document.getElementById("authEmail").value;
+    const password = document.getElementById("authPassword").value;
+
+    const res = await fetch(API + "/api/auth/signup", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ name, email, password })
+    });
+
+    const data = await res.json();
+
+    if (data.token) {
+      token = data.token;
+      currentUser = data.user;
+      localStorage.setItem("smarttools_token", token);
+      localStorage.setItem("smarttools_user", JSON.stringify(currentUser));
+      updateNav();
+    }
+
+    document.getElementById("authOutput").innerText = data.message || data.error;
+  }
+
+  async function login() {
+    const email = document.getElementById("authEmail").value;
+    const password = document.getElementById("authPassword").value;
+
+    const res = await fetch(API + "/api/auth/login", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (data.token) {
+      token = data.token;
+      currentUser = data.user;
+      localStorage.setItem("smarttools_token", token);
+      localStorage.setItem("smarttools_user", JSON.stringify(currentUser));
+      updateNav();
+      showSection("tools");
+    }
+
+    document.getElementById("authOutput").innerText = data.message || data.error;
+  }
+
+  function logout() {
+    token = null;
+    currentUser = null;
+    localStorage.removeItem("smarttools_token");
+    localStorage.removeItem("smarttools_user");
+    updateNav();
+    showSection("home");
+  }
+
+  async function generatePassword() {
+    const length = document.getElementById("passwordLength").value;
+
+    const res = await fetch(API + "/api/tools/password", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ length })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("passwordOutput").innerText = data.password || data.error;
+  }
+
+  async function generateQR() {
+    const text = document.getElementById("qrText").value;
+
+    const res = await fetch(API + "/api/tools/qr", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ text })
+    });
+
+    const data = await res.json();
+
+    if (data.qrImage) {
+      document.getElementById("qrOutput").innerHTML =
+        `<img class="qr" src="${data.qrImage}" alt="QR Code">`;
+    } else {
+      document.getElementById("qrOutput").innerText = data.error;
+    }
+  }
+
+  async function textStats() {
+    const text = document.getElementById("wordText").value;
+
+    const res = await fetch(API + "/api/tools/text-stats", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ text })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("wordOutput").innerText =
+      data.error ||
+      `Words: ${data.words}
+Characters: ${data.characters}
+Characters without spaces: ${data.charactersNoSpaces}
+Sentences: ${data.sentences}
+Paragraphs: ${data.paragraphs}
+Reading time: ${data.readingTime} min`;
+  }
+
+  async function convertCase() {
+    const text = document.getElementById("caseText").value;
+    const mode = document.getElementById("caseMode").value;
+
+    const res = await fetch(API + "/api/tools/case-converter", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ text, mode })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("caseOutput").innerText = data.output || data.error;
+  }
+
+  async function compressImage() {
+    const file = document.getElementById("compressImage").files[0];
+    const quality = document.getElementById("imageQuality").value;
+
+    if (!file) return alert("Choose an image first");
+
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("quality", quality);
+
+    const res = await fetch(API + "/api/tools/image-compress", {
+      method: "POST",
+      headers: authHeader(),
+      body: fd
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return alert(data.error);
+    }
+
+    downloadBlob(await res.blob(), "compressed-image.jpg");
+  }
+
+  async function resizeImage() {
+    const file = document.getElementById("resizeImage").files[0];
+    const width = document.getElementById("resizeWidth").value;
+    const height = document.getElementById("resizeHeight").value;
+
+    if (!file) return alert("Choose an image first");
+
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("width", width);
+    fd.append("height", height);
+
+    const res = await fetch(API + "/api/tools/image-resize", {
+      method: "POST",
+      headers: authHeader(),
+      body: fd
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return alert(data.error);
+    }
+
+    downloadBlob(await res.blob(), "resized-image.jpg");
+  }
+
+  async function mergePDF() {
+    const files = document.getElementById("pdfFiles").files;
+
+    if (files.length < 2) return alert("Choose at least 2 PDFs");
+
+    const fd = new FormData();
+
+    for (const file of files) {
+      fd.append("pdfs", file);
+    }
+
+    const res = await fetch(API + "/api/tools/pdf-merge", {
+      method: "POST",
+      headers: authHeader(),
+      body: fd
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      return alert(data.error);
+    }
+
+    downloadBlob(await res.blob(), "merged.pdf");
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function loanCalculator() {
+    const principal = Number(document.getElementById("loanAmount").value);
+    const annualRate = Number(document.getElementById("loanRate").value);
+    const months = Number(document.getElementById("loanMonths").value);
+
+    if (!principal || !annualRate || !months) {
+      return document.getElementById("loanOutput").innerText = "Fill all fields.";
+    }
+
+    const monthlyRate = annualRate / 100 / 12;
+    const monthlyPayment =
+      principal * monthlyRate * Math.pow(1 + monthlyRate, months) /
+      (Math.pow(1 + monthlyRate, months) - 1);
+
+    const total = monthlyPayment * months;
+    const interest = total - principal;
+
+    document.getElementById("loanOutput").innerText =
+      `Monthly Payment: ${monthlyPayment.toFixed(2)}
+Total Payment: ${total.toFixed(2)}
+Total Interest: ${interest.toFixed(2)}`;
+  }
+
+  function formatJSON() {
+    try {
+      const input = document.getElementById("jsonInput").value;
+      const formatted = JSON.stringify(JSON.parse(input), null, 2);
+      document.getElementById("jsonOutput").innerText = formatted;
+    } catch {
+      document.getElementById("jsonOutput").innerText = "Invalid JSON";
+    }
+  }
+
+  async function payWithMpesa() {
+    const phone = document.getElementById("mpesaPhone").value;
+    const amount = document.getElementById("mpesaAmount").value;
+
+    if (!token) {
+      document.getElementById("premiumOutput").innerText = "Please login first.";
+      return;
+    }
+
+    const res = await fetch(API + "/api/mpesa/stk", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ phone, amount })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("premiumOutput").innerText =
+      data.message || data.error || JSON.stringify(data, null, 2);
+  }
+
+  async function sendFeedback() {
+    const name = document.getElementById("feedbackName").value;
+    const email = document.getElementById("feedbackEmail").value;
+    const message = document.getElementById("feedbackMessage").value;
+
+    const res = await fetch(API + "/api/feedback", {
+      method: "POST",
+      headers: headersJSON(),
+      body: JSON.stringify({ name, email, message })
+    });
+
+    const data = await res.json();
+
+    document.getElementById("feedbackOutput").innerText = data.message || data.error;
+  }
+</script>
+
+</body>
+</html>
