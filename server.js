@@ -23,9 +23,9 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "change_this_secret";
-const FREE_DAILY_LIMIT = Number(process.env.FREE_DAILY_LIMIT || 30);
-const PREMIUM_DAILY_LIMIT = Number(process.env.PREMIUM_DAILY_LIMIT || 1000);
-const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 30);
+const FREE_DAILY_LIMIT = Number(process.env.FREE_DAILY_LIMIT || 50);
+const PREMIUM_DAILY_LIMIT = Number(process.env.PREMIUM_DAILY_LIMIT || 2000);
+const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 40);
 const PREMIUM_AMOUNT = Number(process.env.PREMIUM_AMOUNT || 200);
 
 const uploadDir = path.join(__dirname, "uploads");
@@ -35,13 +35,13 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
 app.use(cors());
-app.use(express.json({ limit: "30mb" }));
-app.use(express.urlencoded({ extended: true, limit: "30mb" }));
+app.use(express.json({ limit: "40mb" }));
+app.use(express.urlencoded({ extended: true, limit: "40mb" }));
 app.use(express.static(publicDir));
 
 app.use(rateLimit({
   windowMs: 60 * 1000,
-  limit: 300,
+  limit: 400,
   message: { error: "Too many requests. Try again later." }
 }));
 
@@ -167,20 +167,11 @@ function signToken(user) {
 }
 
 async function refreshPremiumStatus(userId) {
-  const [rows] = await db.query(
-    "SELECT premium_until FROM users WHERE id=?",
-    [userId]
-  );
-
+  const [rows] = await db.query("SELECT premium_until FROM users WHERE id=?", [userId]);
   if (!rows.length) return;
 
-  const premiumUntil = rows[0].premium_until;
-
-  if (premiumUntil && new Date(premiumUntil) < new Date()) {
-    await db.query(
-      "UPDATE users SET plan='free', premium_until=NULL WHERE id=?",
-      [userId]
-    );
+  if (rows[0].premium_until && new Date(rows[0].premium_until) < new Date()) {
+    await db.query("UPDATE users SET plan='free', premium_until=NULL WHERE id=?", [userId]);
   }
 }
 
@@ -194,11 +185,10 @@ async function authOptional(req, res, next) {
 
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-
     await refreshPremiumStatus(decoded.id);
 
     const [rows] = await db.query(
-      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id = ?",
+      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id=?",
       [decoded.id]
     );
 
@@ -217,11 +207,10 @@ async function authRequired(req, res, next) {
 
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-
     await refreshPremiumStatus(decoded.id);
 
     const [rows] = await db.query(
-      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id = ?",
+      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id=?",
       [decoded.id]
     );
 
@@ -257,9 +246,7 @@ async function checkToolLimit(req, res, next) {
     }
 
     if (rows[0].total >= limit) {
-      return res.status(429).json({
-        error: "Daily free limit reached. Upgrade to Premium for more usage."
-      });
+      return res.status(429).json({ error: "Daily limit reached. Upgrade to Premium." });
     }
 
     next();
@@ -269,10 +256,8 @@ async function checkToolLimit(req, res, next) {
 }
 
 function requirePremium(req, res, next) {
-  if (!req.user) return res.status(401).json({ error: "Login required for premium tools" });
-  if (req.user.plan !== "premium") {
-    return res.status(403).json({ error: "Premium subscription required" });
-  }
+  if (!req.user) return res.status(401).json({ error: "Login required" });
+  if (req.user.plan !== "premium") return res.status(403).json({ error: "Premium required" });
   next();
 }
 
@@ -402,7 +387,7 @@ app.get("/api/auth/me", authRequired, (req, res) => {
   res.json({ user: req.user });
 });
 
-/* DASHBOARD / PLATFORM */
+/* DASHBOARD */
 
 app.get("/api/dashboard", authRequired, async (req, res) => {
   const [[usage]] = await db.query(
@@ -416,7 +401,7 @@ app.get("/api/dashboard", authRequired, async (req, res) => {
   );
 
   const [recentTools] = await db.query(
-    "SELECT tool_name, created_at FROM tool_usage WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
+    "SELECT tool_name, created_at FROM tool_usage WHERE user_id=? ORDER BY created_at DESC LIMIT 25",
     [req.user.id]
   );
 
@@ -425,11 +410,11 @@ app.get("/api/dashboard", authRequired, async (req, res) => {
     FROM tool_usage
     GROUP BY tool_name
     ORDER BY total DESC
-    LIMIT 10
+    LIMIT 15
   `);
 
   const [files] = await db.query(
-    "SELECT tool_name, original_name, output_name, created_at FROM saved_files WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
+    "SELECT tool_name, original_name, output_name, created_at FROM saved_files WHERE user_id=? ORDER BY created_at DESC LIMIT 30",
     [req.user.id]
   );
 
@@ -439,7 +424,7 @@ app.get("/api/dashboard", authRequired, async (req, res) => {
   );
 
   const [notifications] = await db.query(
-    "SELECT id, title, message, is_read, created_at FROM notifications WHERE user_id=? OR user_id IS NULL ORDER BY created_at DESC LIMIT 20",
+    "SELECT id, title, message, is_read, created_at FROM notifications WHERE user_id=? OR user_id IS NULL ORDER BY created_at DESC LIMIT 30",
     [req.user.id]
   );
 
@@ -453,10 +438,10 @@ app.get("/api/dashboard", authRequired, async (req, res) => {
     files,
     favorites,
     notifications,
-    recommendations: recentTools.slice(0, 5).map(t => {
-      if (t.tool_name.includes("pdf")) return "Try PDF Watermark or PDF Compressor";
-      if (t.tool_name.includes("image")) return "Try Image Convert or Image Watermark";
-      return "Try QR Generator or Hash Generator";
+    recommendations: recentTools.slice(0, 6).map(t => {
+      if (t.tool_name.includes("pdf")) return "Try PDF Watermark, PDF Page Numbers, or PDF Compressor.";
+      if (t.tool_name.includes("image")) return "Try Studio Effects, Image Converter, or Background Remover.";
+      return "Try Hash Generator, API Tester, or QR Generator.";
     })
   });
 });
@@ -474,11 +459,7 @@ app.post("/api/favorites", authRequired, async (req, res) => {
 });
 
 app.post("/api/notifications/read", authRequired, async (req, res) => {
-  await db.query(
-    "UPDATE notifications SET is_read=true WHERE user_id=?",
-    [req.user.id]
-  );
-
+  await db.query("UPDATE notifications SET is_read=true WHERE user_id=?", [req.user.id]);
   res.json({ message: "Notifications marked as read" });
 });
 
@@ -487,17 +468,8 @@ app.post("/api/notifications/read", authRequired, async (req, res) => {
 app.get("/api/pricing", (req, res) => {
   res.json({
     plans: [
-      {
-        name: "Free",
-        price: 0,
-        features: ["Ads shown", `${FREE_DAILY_LIMIT} tool uses/day`, "Basic tools"]
-      },
-      {
-        name: "Premium",
-        price: PREMIUM_AMOUNT,
-        currency: "KES",
-        features: ["No ads", `${PREMIUM_DAILY_LIMIT} tool uses/day`, "Premium tools", "Higher file limits"]
-      }
+      { name: "Free", price: 0, features: ["Ads shown", `${FREE_DAILY_LIMIT} uses/day`, "Basic tools"] },
+      { name: "Premium", price: PREMIUM_AMOUNT, currency: "KES", features: ["No ads", `${PREMIUM_DAILY_LIMIT} uses/day`, "Premium tools"] }
     ]
   });
 });
@@ -512,12 +484,9 @@ app.post("/api/subscription/manual-upgrade", authRequired, async (req, res) => {
     [req.user.id]
   );
 
-  await notifyUser(req.user.id, "Premium Activated", "Your premium subscription is now active for 30 days.");
-
+  await notifyUser(req.user.id, "Premium Activated", "Your premium subscription is active for 30 days.");
   res.json({ message: "Premium activated for testing" });
 });
-
-/* MPESA */
 
 async function getMpesaAccessToken() {
   const auth = Buffer.from(
@@ -550,7 +519,6 @@ app.post("/api/mpesa/stk", authRequired, async (req, res) => {
       : "https://sandbox.safaricom.co.ke";
 
     const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
-
     const shortcode = process.env.MPESA_SHORTCODE;
     const passkey = process.env.MPESA_PASSKEY;
     const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString("base64");
@@ -577,7 +545,7 @@ app.post("/api/mpesa/stk", authRequired, async (req, res) => {
 
     await db.query(
       `
-      INSERT INTO payments 
+      INSERT INTO payments
       (user_id, checkout_request_id, merchant_request_id, phone, amount, status, raw_response)
       VALUES (?, ?, ?, ?, ?, 'pending', ?)
       `,
@@ -623,11 +591,7 @@ app.post("/api/mpesa/callback", async (req, res) => {
           [payments[0].user_id]
         );
 
-        await notifyUser(
-          payments[0].user_id,
-          "Premium Activated",
-          "Payment received. Your Premium subscription is active for 30 days."
-        );
+        await notifyUser(payments[0].user_id, "Premium Activated", "Payment received. Premium is active for 30 days.");
       }
     }
 
@@ -668,7 +632,6 @@ app.post("/api/tools/pdf-merge", authOptional, checkToolLimit, upload.array("pdf
     await saveFileHistory(req, "pdf-merger", "multiple PDFs", "merged.pdf");
 
     req.files.forEach(f => safeDelete(f.path));
-
     downloadAndClean(res, outputPath, "merged.pdf");
   } catch {
     req.files?.forEach(f => safeDelete(f.path));
@@ -705,7 +668,6 @@ app.post("/api/tools/pdf-split", authOptional, checkToolLimit, upload.single("pd
     await saveFileHistory(req, "pdf-splitter", req.file.originalname, "split.pdf");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "split.pdf");
   } catch {
     safeDelete(req.file?.path);
@@ -744,7 +706,6 @@ app.post("/api/tools/pdf-watermark", authOptional, checkToolLimit, upload.single
     await saveFileHistory(req, "pdf-watermark", req.file.originalname, "watermarked.pdf");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "watermarked.pdf");
   } catch {
     safeDelete(req.file?.path);
@@ -768,7 +729,6 @@ app.post("/api/tools/pdf-compress", authOptional, checkToolLimit, upload.single(
     await saveFileHistory(req, "pdf-compressor", req.file.originalname, "compressed.pdf");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "compressed.pdf");
   } catch {
     safeDelete(req.file?.path);
@@ -804,7 +764,6 @@ app.post("/api/tools/pdf-page-numbers", authOptional, checkToolLimit, upload.sin
     await saveFileHistory(req, "pdf-page-numbers", req.file.originalname, "numbered.pdf");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "numbered.pdf");
   } catch {
     safeDelete(req.file?.path);
@@ -831,7 +790,6 @@ app.post("/api/tools/pdf-info", authOptional, checkToolLimit, upload.single("pdf
     };
 
     safeDelete(req.file.path);
-
     res.json(info);
   } catch {
     safeDelete(req.file?.path);
@@ -861,7 +819,6 @@ app.post("/api/tools/image-to-pdf", authOptional, checkToolLimit, upload.array("
     await saveFileHistory(req, "image-to-pdf", "images", "images.pdf");
 
     req.files.forEach(f => safeDelete(f.path));
-
     downloadAndClean(res, outputPath, "images.pdf");
   } catch {
     req.files?.forEach(f => safeDelete(f.path));
@@ -887,7 +844,6 @@ app.post("/api/tools/image-compress", authOptional, checkToolLimit, upload.singl
     await saveFileHistory(req, "image-compressor", req.file.originalname, "compressed-image.jpg");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "compressed-image.jpg");
   } catch {
     safeDelete(req.file?.path);
@@ -917,7 +873,6 @@ app.post("/api/tools/image-resize", authOptional, checkToolLimit, upload.single(
     await saveFileHistory(req, "image-resizer", req.file.originalname, "resized-image.jpg");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "resized-image.jpg");
   } catch {
     safeDelete(req.file?.path);
@@ -943,7 +898,6 @@ app.post("/api/tools/image-convert", authOptional, checkToolLimit, upload.single
     await saveFileHistory(req, "image-converter", req.file.originalname, `converted.${format}`);
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, `converted.${format}`);
   } catch {
     safeDelete(req.file?.path);
@@ -965,13 +919,16 @@ app.post("/api/tools/image-crop", authOptional, checkToolLimit, upload.single("i
 
     outputPath = path.join(uploadDir, `cropped-${Date.now()}.png`);
 
-    await sharp(req.file.path).rotate().extract({ left, top, width, height }).png().toFile(outputPath);
+    await sharp(req.file.path)
+      .rotate()
+      .extract({ left, top, width, height })
+      .png()
+      .toFile(outputPath);
 
     await logToolUsage(req, "image-cropper", req.file.size);
     await saveFileHistory(req, "image-cropper", req.file.originalname, "cropped.png");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "cropped.png");
   } catch {
     safeDelete(req.file?.path);
@@ -988,8 +945,8 @@ app.post("/api/tools/image-watermark", authOptional, checkToolLimit, upload.sing
 
     const text = (req.body.text || "SmartTools").replace(/[<>&]/g, "");
     const svg = `
-      <svg width="1000" height="250">
-        <text x="30" y="120" font-size="70" fill="white" opacity="0.75" font-family="Arial">${text}</text>
+      <svg width="1200" height="260">
+        <text x="30" y="130" font-size="76" fill="white" opacity="0.75" font-family="Arial">${text}</text>
       </svg>
     `;
 
@@ -1005,7 +962,6 @@ app.post("/api/tools/image-watermark", authOptional, checkToolLimit, upload.sing
     await saveFileHistory(req, "image-watermark", req.file.originalname, "watermarked.png");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "watermarked.png");
   } catch {
     safeDelete(req.file?.path);
@@ -1014,34 +970,108 @@ app.post("/api/tools/image-watermark", authOptional, checkToolLimit, upload.sing
   }
 });
 
+function applyStudioEffect(pipeline, effect) {
+  switch (effect) {
+    case "blur": return pipeline.blur(6);
+    case "heavy-blur": return pipeline.blur(18);
+    case "sharpen": return pipeline.sharpen();
+    case "grayscale": return pipeline.grayscale();
+    case "sepia": return pipeline.tint({ r: 112, g: 66, b: 20 }).modulate({ saturation: 0.8 });
+    case "vintage": return pipeline.modulate({ brightness: 0.95, saturation: 0.6 }).tint({ r: 190, g: 150, b: 95 });
+    case "warm": return pipeline.tint({ r: 255, g: 210, b: 170 }).modulate({ brightness: 1.05, saturation: 1.15 });
+    case "cool": return pipeline.tint({ r: 170, g: 210, b: 255 }).modulate({ brightness: 1.02, saturation: 1.1 });
+    case "bright": return pipeline.modulate({ brightness: 1.35 });
+    case "dark": return pipeline.modulate({ brightness: 0.65 });
+    case "high-contrast": return pipeline.linear(1.45, -20);
+    case "low-contrast": return pipeline.linear(0.75, 20);
+    case "saturate": return pipeline.modulate({ saturation: 1.8 });
+    case "desaturate": return pipeline.modulate({ saturation: 0.35 });
+    case "negative": return pipeline.negate();
+    case "normalize": return pipeline.normalize();
+    case "flip": return pipeline.flip();
+    case "flop": return pipeline.flop();
+    case "rotate-90": return pipeline.rotate(90);
+    case "rotate-180": return pipeline.rotate(180);
+    case "rotate-270": return pipeline.rotate(270);
+    case "soft": return pipeline.blur(1.2).modulate({ brightness: 1.08, saturation: 0.95 });
+    case "dramatic": return pipeline.modulate({ brightness: 0.9, saturation: 1.5 }).linear(1.35, -15);
+    case "cinematic": return pipeline.modulate({ brightness: 0.9, saturation: 0.85 }).tint({ r: 160, g: 190, b: 210 });
+    case "golden": return pipeline.tint({ r: 255, g: 205, b: 90 }).modulate({ saturation: 1.25 });
+    case "rose": return pipeline.tint({ r: 255, g: 185, b: 205 }).modulate({ saturation: 1.2 });
+    case "emerald": return pipeline.tint({ r: 120, g: 255, b: 190 }).modulate({ saturation: 1.1 });
+    case "blueprint": return pipeline.grayscale().tint({ r: 50, g: 120, b: 255 });
+    case "noir": return pipeline.grayscale().linear(1.45, -30);
+    case "matte": return pipeline.modulate({ brightness: 1.06, saturation: 0.75 }).linear(0.88, 18);
+    case "clean": return pipeline.normalize().sharpen().modulate({ brightness: 1.08, saturation: 1.08 });
+    case "portrait-pop": return pipeline.modulate({ brightness: 1.08, saturation: 1.3 }).sharpen();
+    case "food-pop": return pipeline.modulate({ brightness: 1.12, saturation: 1.55 }).sharpen();
+    case "landscape-pop": return pipeline.modulate({ brightness: 1.05, saturation: 1.45 }).linear(1.15, -5);
+    case "document-clean": return pipeline.grayscale().normalize().sharpen().linear(1.35, -15);
+    case "washed": return pipeline.modulate({ brightness: 1.25, saturation: 0.45 }).linear(0.8, 35);
+    case "deep-shadow": return pipeline.modulate({ brightness: 0.75, saturation: 1.15 }).linear(1.3, -25);
+    case "neon": return pipeline.modulate({ brightness: 1.1, saturation: 2.4 }).linear(1.35, -25);
+    case "dream": return pipeline.blur(1.5).modulate({ brightness: 1.2, saturation: 1.35 });
+    case "web-optimized": return pipeline.resize({ width: 1200, withoutEnlargement: true }).jpeg({ quality: 78 });
+    default: return pipeline;
+  }
+}
+
 app.post("/api/tools/image-effect", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
 
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
-    const effect = req.body.effect || "blur";
+    const effect = req.body.effect || "clean";
     let pipeline = sharp(req.file.path).rotate();
 
-    if (effect === "blur") pipeline = pipeline.blur(Number(req.body.amount || 5));
-    if (effect === "sharpen") pipeline = pipeline.sharpen();
-    if (effect === "grayscale") pipeline = pipeline.grayscale();
-    if (effect === "flip") pipeline = pipeline.flip();
-    if (effect === "flop") pipeline = pipeline.flop();
+    pipeline = applyStudioEffect(pipeline, effect);
 
-    outputPath = path.join(uploadDir, `effect-${Date.now()}.png`);
-    await pipeline.png().toFile(outputPath);
+    outputPath = path.join(uploadDir, `effect-${Date.now()}.jpg`);
+    await pipeline.jpeg({ quality: 90 }).toFile(outputPath);
 
     await logToolUsage(req, `image-${effect}`, req.file.size);
-    await saveFileHistory(req, `image-${effect}`, req.file.originalname, "effect.png");
+    await saveFileHistory(req, `image-${effect}`, req.file.originalname, "effect.jpg");
 
     safeDelete(req.file.path);
-
-    downloadAndClean(res, outputPath, "effect.png");
-  } catch {
+    downloadAndClean(res, outputPath, "effect.jpg");
+  } catch (error) {
+    console.error(error);
     safeDelete(req.file?.path);
     safeDelete(outputPath);
     res.status(500).json({ error: "Image effect failed" });
+  }
+});
+
+app.post("/api/tools/image-adjust", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
+  let outputPath;
+
+  try {
+    if (!req.file) return res.status(400).json({ error: "Image required" });
+
+    const brightness = Number(req.body.brightness || 1);
+    const saturation = Number(req.body.saturation || 1);
+    const hue = Number(req.body.hue || 0);
+    const contrast = Number(req.body.contrast || 1);
+
+    outputPath = path.join(uploadDir, `adjusted-${Date.now()}.jpg`);
+
+    await sharp(req.file.path)
+      .rotate()
+      .modulate({ brightness, saturation, hue })
+      .linear(contrast, 0)
+      .jpeg({ quality: 90 })
+      .toFile(outputPath);
+
+    await logToolUsage(req, "image-custom-adjust", req.file.size);
+    await saveFileHistory(req, "image-custom-adjust", req.file.originalname, "adjusted.jpg");
+
+    safeDelete(req.file.path);
+    downloadAndClean(res, outputPath, "adjusted.jpg");
+  } catch {
+    safeDelete(req.file?.path);
+    safeDelete(outputPath);
+    res.status(500).json({ error: "Image adjustment failed" });
   }
 });
 
@@ -1069,22 +1099,19 @@ app.post("/api/tools/background-remove-color", authOptional, checkToolLimit, upl
       const dg = Math.abs(data[i + 1] - target.g);
       const db = Math.abs(data[i + 2] - target.b);
 
-      if (dr + dg + db < threshold * 3) {
-        data[i + 3] = 0;
-      }
+      if (dr + dg + db < threshold * 3) data[i + 3] = 0;
     }
 
     outputPath = path.join(uploadDir, `bg-removed-${Date.now()}.png`);
 
-    await sharp(data, {
-      raw: { width: info.width, height: info.height, channels: 4 }
-    }).png().toFile(outputPath);
+    await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+      .png()
+      .toFile(outputPath);
 
     await logToolUsage(req, "background-remove-color", req.file.size);
     await saveFileHistory(req, "background-remove-color", req.file.originalname, "background-removed.png");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "background-removed.png");
   } catch {
     safeDelete(req.file?.path);
@@ -1119,7 +1146,6 @@ app.post("/api/tools/background-changer", authOptional, checkToolLimit, upload.s
     await saveFileHistory(req, "background-changer", req.file.originalname, "background-changed.png");
 
     safeDelete(req.file.path);
-
     downloadAndClean(res, outputPath, "background-changed.png");
   } catch {
     safeDelete(req.file?.path);
@@ -1142,7 +1168,6 @@ app.post("/api/tools/zip-extract", authOptional, checkToolLimit, upload.single("
     }));
 
     await logToolUsage(req, "zip-extractor", req.file.size);
-
     safeDelete(req.file.path);
 
     res.json({ entries });
@@ -1164,9 +1189,7 @@ app.post("/api/tools/file-compress", authOptional, checkToolLimit, upload.array(
 
     archive.pipe(output);
 
-    req.files.forEach(file => {
-      archive.file(file.path, { name: file.originalname });
-    });
+    req.files.forEach(file => archive.file(file.path, { name: file.originalname }));
 
     output.on("close", async () => {
       await logToolUsage(req, "file-compressor");
@@ -1183,17 +1206,16 @@ app.post("/api/tools/file-compress", authOptional, checkToolLimit, upload.array(
   }
 });
 
-/* TEXT / DEV / UTILITY */
+/* UTILITY */
 
 app.post("/api/tools/password", authOptional, checkToolLimit, async (req, res) => {
-  const length = Math.min(Math.max(Number(req.body.length || 16), 4), 64);
+  const length = Math.min(Math.max(Number(req.body.length || 16), 4), 128);
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=";
 
   let password = "";
   for (let i = 0; i < length; i++) password += chars[Math.floor(Math.random() * chars.length)];
 
   await logToolUsage(req, "password-generator");
-
   res.json({ password });
 });
 
@@ -1204,7 +1226,6 @@ app.post("/api/tools/qr", authOptional, checkToolLimit, async (req, res) => {
   const qrImage = await QRCode.toDataURL(text, { width: 350, margin: 2 });
 
   await logToolUsage(req, "qr-generator");
-
   res.json({ qrImage });
 });
 
@@ -1219,7 +1240,6 @@ app.post("/api/tools/hash", authOptional, checkToolLimit, async (req, res) => {
   const hash = crypto.createHash(algorithm).update(text).digest("hex");
 
   await logToolUsage(req, "hash-generator");
-
   res.json({ hash });
 });
 
@@ -1228,13 +1248,15 @@ app.post("/api/tools/text-stats", authOptional, checkToolLimit, async (req, res)
 
   await logToolUsage(req, "text-stats");
 
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+
   res.json({
-    words: text.trim() ? text.trim().split(/\s+/).length : 0,
+    words,
     characters: text.length,
     charactersNoSpaces: text.replace(/\s/g, "").length,
     sentences: text.split(/[.!?]+/).filter(s => s.trim()).length,
     paragraphs: text.split(/\n+/).filter(p => p.trim()).length,
-    readingTime: Math.ceil((text.trim() ? text.trim().split(/\s+/).length : 0) / 200)
+    readingTime: Math.ceil(words / 200)
   });
 });
 
@@ -1247,16 +1269,16 @@ app.post("/api/tools/case-converter", authOptional, checkToolLimit, async (req, 
   if (mode === "lower") output = text.toLowerCase();
   if (mode === "title") output = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   if (mode === "sentence") output = text.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
+  if (mode === "reverse") output = text.split("").reverse().join("");
+  if (mode === "slug") output = text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   await logToolUsage(req, "case-converter");
-
   res.json({ output });
 });
 
 app.post("/api/tools/api-tester", authOptional, requirePremium, async (req, res) => {
   try {
     const { method, url, body, headers } = req.body;
-
     if (!url) return res.status(400).json({ error: "URL required" });
 
     const response = await axios({
@@ -1312,7 +1334,7 @@ app.get("/api/admin/stats", authRequired, async (req, res) => {
     FROM tool_usage
     GROUP BY tool_name
     ORDER BY total DESC
-    LIMIT 15
+    LIMIT 20
   `);
 
   res.json({
