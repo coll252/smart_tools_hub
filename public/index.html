@@ -5,30 +5,29 @@
 <title>SmartTools Hub</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Replace this with your real AdSense publisher ID after approval -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX"
-crossorigin="anonymous"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXX" crossorigin="anonymous"></script>
 
 <style>
-*{box-sizing:border-box;font-family:Arial,sans-serif}
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
 body{margin:0;background:#f4f7fb;color:#172033}
 body.dark{background:#0f172a;color:#e5e7eb}
 header{background:linear-gradient(135deg,#0057ff,#00b894);color:white;padding:18px 6%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .logo{font-size:24px;font-weight:900}
 nav a{color:white;margin-left:14px;text-decoration:none;font-weight:bold;cursor:pointer}
-.hero{padding:60px 6%;background:white}
+.hero{padding:70px 6%;background:white;display:grid;grid-template-columns:1.2fr .8fr;gap:25px;align-items:center}
+.hero h1{font-size:46px;margin:0}
+.hero p{font-size:18px;line-height:1.7}
 .dark .hero,.dark .card{background:#1e293b;color:#e5e7eb}
-.hero h1{font-size:42px}
 .section{padding:35px 6%}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{background:white;padding:20px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.card{background:white;padding:20px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
 input,textarea,select{width:100%;padding:12px;margin:7px 0;border-radius:10px;border:1px solid #cbd5e1}
 textarea{min-height:100px}
 button{background:#0057ff;color:white;border:0;padding:11px 15px;border-radius:10px;font-weight:bold;cursor:pointer;margin:4px}
 button.green{background:#00b894}
 button.darkbtn{background:#111827}
 button.red{background:#e11d48}
-.output{background:#f1f5f9;color:#111827;padding:12px;border-radius:10px;margin-top:8px;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow:auto}
+.output{background:#f1f5f9;color:#111827;padding:12px;border-radius:10px;margin-top:8px;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto}
 .hidden{display:none}
 .qr{width:180px;margin-top:10px}
 .tool-title{display:flex;justify-content:space-between;align-items:center}
@@ -36,7 +35,11 @@ button.red{background:#e11d48}
 .adbox{border:2px dashed #94a3b8;background:#f8fafc;padding:25px;border-radius:16px;text-align:center;margin:20px 0;color:#64748b}
 .searchbar{max-width:700px;margin-bottom:20px}
 .premium{border:2px solid #00b894}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.hero h1{font-size:30px}header{flex-direction:column}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0}
+.stat{background:linear-gradient(135deg,#e0f2fe,#dcfce7);padding:20px;border-radius:16px;color:#0f172a;font-weight:bold}
+.hero-card{background:#0f172a;color:white;padding:25px;border-radius:22px}
+.small{font-size:13px;color:#64748b}
+@media(max-width:900px){.grid,.hero,.stats{grid-template-columns:1fr}.hero h1{font-size:30px}header{flex-direction:column}}
 </style>
 </head>
 
@@ -61,17 +64,33 @@ button.red{background:#e11d48}
 
 <section id="home" class="page">
   <div class="hero">
-    <span class="badge">Monetized tools platform</span>
-    <h1 id="heroTitle">Free Online Tools for PDFs, Images, Files, Developers and Students</h1>
-    <p>Use free tools with ads or upgrade to Premium for higher limits, no ads and advanced tools.</p>
-    <button onclick="showPage('tools')">Open Tools</button>
-    <button class="green" onclick="showPage('pricing')">Upgrade Premium</button>
+    <div>
+      <span class="badge">Monetized tools platform</span>
+      <h1 id="heroTitle">Advanced Online Tools for Images, PDFs, Files, Developers and Students</h1>
+      <p>Use powerful file tools, 30+ image effects, calculators, converters, developer tools, dashboards, favorites, notifications and premium subscriptions.</p>
+      <button onclick="showPage('tools')">Open Tools</button>
+      <button class="green" onclick="showPage('pricing')">Upgrade Premium</button>
+    </div>
+    <div class="hero-card">
+      <h2>Revenue Ready</h2>
+      <p>✔ AdSense blocks</p>
+      <p>✔ M-Pesa subscription flow</p>
+      <p>✔ Free/Premium limits</p>
+      <p>✔ Dashboard and analytics</p>
+    </div>
   </div>
 
   <div class="section">
+    <div class="stats">
+      <div class="stat">50+ Tools</div>
+      <div class="stat">30+ Image Effects</div>
+      <div class="stat">PDF Studio</div>
+      <div class="stat">Premium Ready</div>
+    </div>
+
     <div class="adbox ad-only">
       AdSense Banner Space<br>
-      Replace ca-pub-XXXXXXXXXXXX with your real AdSense publisher ID.
+      Replace ca-pub-XXXXXXXXXXXX with your real publisher ID.
     </div>
   </div>
 </section>
@@ -89,7 +108,7 @@ button.red{background:#e11d48}
 </section>
 
 <section id="pricing" class="page hidden section">
-  <h2>Monetization & Subscriptions</h2>
+  <h2>Subscriptions</h2>
   <div class="grid">
     <div class="card">
       <h3>Free</h3>
@@ -102,7 +121,7 @@ button.red{background:#e11d48}
     <div class="card premium">
       <h3>Premium - KES 200/month</h3>
       <p>No ads</p>
-      <p>Higher usage limits</p>
+      <p>Higher limits</p>
       <p>Premium tools</p>
       <input id="mpesaPhone" placeholder="2547XXXXXXXX">
       <input id="mpesaAmount" type="number" value="200">
@@ -113,9 +132,9 @@ button.red{background:#e11d48}
 
     <div class="card">
       <h3>Business</h3>
-      <p>Team accounts</p>
       <p>API access</p>
       <p>Bulk file processing</p>
+      <p>Team accounts</p>
       <button>Coming Soon</button>
     </div>
   </div>
@@ -130,279 +149,122 @@ button.red{background:#e11d48}
 
 <section id="tools" class="page hidden section">
   <h2>All Tools</h2>
-
-  <input class="searchbar" id="toolSearch" onkeyup="filterTools()" placeholder="Search tools...">
+  <input class="searchbar" id="toolSearch" onkeyup="filterTools()" placeholder="Search any tool...">
 
   <div class="adbox ad-only">AdSense In-Content Ad Space</div>
 
   <h2>📄 PDF Tools</h2>
   <div class="grid">
-
-    <div class="card tool" data-name="pdf merge">
-      <div class="tool-title"><h3>PDF Merger</h3><button onclick="fav('PDF Merger')">★</button></div>
-      <input id="pdfMergeFiles" type="file" accept="application/pdf" multiple>
-      <button onclick="multiUploadDownload('/api/tools/pdf-merge','pdfMergeFiles','pdfs','merged.pdf')">Merge</button>
-    </div>
-
-    <div class="card tool" data-name="pdf split">
-      <div class="tool-title"><h3>PDF Splitter</h3><button onclick="fav('PDF Splitter')">★</button></div>
-      <input id="splitPdf" type="file" accept="application/pdf">
-      <input id="splitStart" type="number" value="1" placeholder="Start page">
-      <input id="splitEnd" type="number" value="1" placeholder="End page">
-      <button onclick="pdfSplit()">Split PDF</button>
-    </div>
-
-    <div class="card tool" data-name="pdf compress">
-      <div class="tool-title"><h3>PDF Compressor</h3><button onclick="fav('PDF Compressor')">★</button></div>
-      <input id="compressPdf" type="file" accept="application/pdf">
-      <button onclick="fileUploadDownload('/api/tools/pdf-compress','compressPdf','pdf','compressed.pdf')">Compress</button>
-    </div>
-
-    <div class="card tool" data-name="pdf watermark">
-      <div class="tool-title"><h3>PDF Watermark</h3><button onclick="fav('PDF Watermark')">★</button></div>
-      <input id="watermarkPdf" type="file" accept="application/pdf">
-      <input id="pdfWatermarkText" placeholder="Watermark text">
-      <button onclick="pdfWatermark()">Add Watermark</button>
-    </div>
-
-    <div class="card tool" data-name="pdf page numbers">
-      <div class="tool-title"><h3>PDF Page Numbers</h3><button onclick="fav('PDF Page Numbers')">★</button></div>
-      <input id="numberPdf" type="file" accept="application/pdf">
-      <button onclick="fileUploadDownload('/api/tools/pdf-page-numbers','numberPdf','pdf','numbered.pdf')">Add Numbers</button>
-    </div>
-
-    <div class="card tool" data-name="pdf info metadata">
-      <div class="tool-title"><h3>PDF Info</h3><button onclick="fav('PDF Info')">★</button></div>
-      <input id="pdfInfo" type="file" accept="application/pdf">
-      <button onclick="pdfInfoTool()">Read Info</button>
-      <div id="pdfInfoOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="image to pdf">
-      <div class="tool-title"><h3>Image to PDF</h3><button onclick="fav('Image to PDF')">★</button></div>
-      <input id="imageToPdf" type="file" accept="image/*" multiple>
-      <button onclick="multiUploadDownload('/api/tools/image-to-pdf','imageToPdf','images','images.pdf')">Convert Images</button>
-    </div>
+    <div class="card tool" data-name="pdf merge"><h3>PDF Merger</h3><input id="pdfMergeFiles" type="file" accept="application/pdf" multiple><button onclick="multiUploadDownload('/api/tools/pdf-merge','pdfMergeFiles','pdfs','merged.pdf')">Merge</button></div>
+    <div class="card tool" data-name="pdf split"><h3>PDF Splitter</h3><input id="splitPdf" type="file" accept="application/pdf"><input id="splitStart" type="number" value="1"><input id="splitEnd" type="number" value="1"><button onclick="pdfSplit()">Split</button></div>
+    <div class="card tool" data-name="pdf compress"><h3>PDF Compressor</h3><input id="compressPdf" type="file" accept="application/pdf"><button onclick="fileUploadDownload('/api/tools/pdf-compress','compressPdf','pdf','compressed.pdf')">Compress</button></div>
+    <div class="card tool" data-name="pdf watermark"><h3>PDF Watermark</h3><input id="watermarkPdf" type="file" accept="application/pdf"><input id="pdfWatermarkText" placeholder="Watermark text"><button onclick="pdfWatermark()">Watermark</button></div>
+    <div class="card tool" data-name="pdf page numbers"><h3>PDF Page Numbers</h3><input id="numberPdf" type="file" accept="application/pdf"><button onclick="fileUploadDownload('/api/tools/pdf-page-numbers','numberPdf','pdf','numbered.pdf')">Add Numbers</button></div>
+    <div class="card tool" data-name="pdf info metadata"><h3>PDF Info</h3><input id="pdfInfo" type="file" accept="application/pdf"><button onclick="jsonUpload('/api/tools/pdf-info','pdfInfo','pdf','pdfInfoOut')">Read Info</button><div id="pdfInfoOut" class="output"></div></div>
+    <div class="card tool" data-name="image to pdf"><h3>Image to PDF</h3><input id="imageToPdf" type="file" accept="image/*" multiple><button onclick="multiUploadDownload('/api/tools/image-to-pdf','imageToPdf','images','images.pdf')">Convert</button></div>
   </div>
 
-  <h2>🖼️ Image Tools</h2>
+  <h2>🖼️ Advanced Image Studio</h2>
   <div class="grid">
-
-    <div class="card tool" data-name="background remover color">
-      <h3>Background Remover By Color</h3>
-      <p>Works best for white, green, blue, or solid backgrounds.</p>
-      <input id="bgRemove" type="file" accept="image/*">
-      <input id="bgRemoveColor" type="color" value="#ffffff">
-      <input id="bgThreshold" type="number" value="40" placeholder="Threshold">
-      <button onclick="backgroundRemoveColor()">Remove Background</button>
-    </div>
-
-    <div class="card tool" data-name="background changer">
-      <h3>Background Changer</h3>
-      <input id="bgChange" type="file" accept="image/*">
-      <input id="bgColor" type="color" value="#ffffff">
-      <button onclick="backgroundChanger()">Change Background</button>
-    </div>
-
-    <div class="card tool" data-name="image converter png jpg webp">
-      <h3>Image Converter</h3>
-      <input id="imageConvert" type="file" accept="image/*">
-      <select id="imageFormat">
-        <option value="png">PNG</option>
-        <option value="jpg">JPG</option>
-        <option value="webp">WEBP</option>
-      </select>
-      <button onclick="imageConvert()">Convert</button>
-    </div>
-
-    <div class="card tool" data-name="image crop">
-      <h3>Image Cropper</h3>
-      <input id="imageCrop" type="file" accept="image/*">
-      <input id="cropLeft" type="number" value="0" placeholder="Left">
-      <input id="cropTop" type="number" value="0" placeholder="Top">
-      <input id="cropWidth" type="number" value="300" placeholder="Width">
-      <input id="cropHeight" type="number" value="300" placeholder="Height">
-      <button onclick="imageCrop()">Crop</button>
-    </div>
-
-    <div class="card tool" data-name="image watermark">
-      <h3>Image Watermark</h3>
-      <input id="imageWatermark" type="file" accept="image/*">
-      <input id="imageWatermarkText" placeholder="Watermark text">
-      <button onclick="imageWatermark()">Watermark</button>
-    </div>
-
-    <div class="card tool" data-name="image effects blur sharpen grayscale flip">
-      <h3>Image Effects</h3>
+    <div class="card tool" data-name="image studio effects brightness coloring appearance">
+      <h3>30+ Image Effects Studio</h3>
       <input id="imageEffect" type="file" accept="image/*">
       <select id="effectMode">
+        <option value="clean">Clean Enhance</option>
         <option value="blur">Blur</option>
+        <option value="heavy-blur">Heavy Blur</option>
         <option value="sharpen">Sharpen</option>
         <option value="grayscale">Grayscale</option>
+        <option value="sepia">Sepia</option>
+        <option value="vintage">Vintage</option>
+        <option value="warm">Warm</option>
+        <option value="cool">Cool</option>
+        <option value="bright">Bright</option>
+        <option value="dark">Dark</option>
+        <option value="high-contrast">High Contrast</option>
+        <option value="low-contrast">Low Contrast</option>
+        <option value="saturate">Saturate</option>
+        <option value="desaturate">Desaturate</option>
+        <option value="negative">Negative</option>
+        <option value="normalize">Normalize</option>
         <option value="flip">Flip Vertical</option>
         <option value="flop">Flip Horizontal</option>
+        <option value="rotate-90">Rotate 90</option>
+        <option value="rotate-180">Rotate 180</option>
+        <option value="rotate-270">Rotate 270</option>
+        <option value="soft">Soft Look</option>
+        <option value="dramatic">Dramatic</option>
+        <option value="cinematic">Cinematic</option>
+        <option value="golden">Golden</option>
+        <option value="rose">Rose</option>
+        <option value="emerald">Emerald</option>
+        <option value="blueprint">Blueprint</option>
+        <option value="noir">Noir</option>
+        <option value="matte">Matte</option>
+        <option value="portrait-pop">Portrait Pop</option>
+        <option value="food-pop">Food Pop</option>
+        <option value="landscape-pop">Landscape Pop</option>
+        <option value="document-clean">Document Clean</option>
+        <option value="washed">Washed</option>
+        <option value="deep-shadow">Deep Shadow</option>
+        <option value="neon">Neon</option>
+        <option value="dream">Dream</option>
+        <option value="web-optimized">Web Optimized</option>
       </select>
-      <button onclick="imageEffect()">Apply</button>
+      <button onclick="imageEffect()">Apply Effect</button>
     </div>
 
-    <div class="card tool" data-name="image compress">
-      <h3>Image Compressor</h3>
-      <input id="compressImage" type="file" accept="image/*">
-      <input id="imageQuality" type="number" value="65">
-      <button onclick="imageCompress()">Compress</button>
+    <div class="card tool" data-name="custom brightness saturation hue contrast">
+      <h3>Custom Image Adjuster</h3>
+      <input id="customAdjustImage" type="file" accept="image/*">
+      <label>Brightness</label><input id="brightness" type="range" min="0.2" max="2.5" step="0.1" value="1">
+      <label>Saturation</label><input id="saturation" type="range" min="0" max="3" step="0.1" value="1">
+      <label>Hue</label><input id="hue" type="range" min="-180" max="180" step="1" value="0">
+      <label>Contrast</label><input id="contrast" type="range" min="0.3" max="2.5" step="0.1" value="1">
+      <button onclick="imageAdjust()">Apply Adjustments</button>
     </div>
 
-    <div class="card tool" data-name="image resize">
-      <h3>Image Resizer</h3>
-      <input id="resizeImage" type="file" accept="image/*">
-      <input id="resizeWidth" type="number" value="800">
-      <input id="resizeHeight" type="number" value="800">
-      <button onclick="imageResize()">Resize</button>
-    </div>
+    <div class="card tool" data-name="background remover color"><h3>Background Remover By Color</h3><p class="small">Best for solid white/green/blue backgrounds.</p><input id="bgRemove" type="file" accept="image/*"><input id="bgRemoveColor" type="color" value="#ffffff"><input id="bgThreshold" type="number" value="40"><button onclick="backgroundRemoveColor()">Remove</button></div>
+    <div class="card tool" data-name="background changer"><h3>Background Changer</h3><input id="bgChange" type="file" accept="image/*"><input id="bgColor" type="color" value="#ffffff"><button onclick="backgroundChanger()">Change</button></div>
+    <div class="card tool" data-name="image converter png jpg webp"><h3>Image Converter</h3><input id="imageConvert" type="file" accept="image/*"><select id="imageFormat"><option value="png">PNG</option><option value="jpg">JPG</option><option value="webp">WEBP</option></select><button onclick="imageConvert()">Convert</button></div>
+    <div class="card tool" data-name="image crop"><h3>Image Cropper</h3><input id="imageCrop" type="file" accept="image/*"><input id="cropLeft" type="number" value="0"><input id="cropTop" type="number" value="0"><input id="cropWidth" type="number" value="300"><input id="cropHeight" type="number" value="300"><button onclick="imageCrop()">Crop</button></div>
+    <div class="card tool" data-name="image watermark"><h3>Image Watermark</h3><input id="imageWatermark" type="file" accept="image/*"><input id="imageWatermarkText" placeholder="Watermark text"><button onclick="imageWatermark()">Watermark</button></div>
+    <div class="card tool" data-name="image compress"><h3>Image Compressor</h3><input id="compressImage" type="file" accept="image/*"><input id="imageQuality" type="number" value="65"><button onclick="imageCompress()">Compress</button></div>
+    <div class="card tool" data-name="image resize"><h3>Image Resizer</h3><input id="resizeImage" type="file" accept="image/*"><input id="resizeWidth" type="number" value="800"><input id="resizeHeight" type="number" value="800"><button onclick="imageResize()">Resize</button></div>
   </div>
 
   <div class="adbox ad-only">AdSense Ad Space</div>
 
   <h2>📦 Archive Tools</h2>
   <div class="grid">
-    <div class="card tool" data-name="zip extractor">
-      <h3>ZIP Extractor</h3>
-      <input id="zipExtract" type="file" accept=".zip">
-      <button onclick="zipExtractTool()">List ZIP Files</button>
-      <div id="zipOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="file compressor zip">
-      <h3>File Compressor</h3>
-      <input id="fileCompress" type="file" multiple>
-      <button onclick="multiUploadDownload('/api/tools/file-compress','fileCompress','files','compressed-files.zip')">Compress to ZIP</button>
-    </div>
+    <div class="card tool" data-name="zip extractor"><h3>ZIP Extractor</h3><input id="zipExtract" type="file" accept=".zip"><button onclick="jsonUpload('/api/tools/zip-extract','zipExtract','zip','zipOut')">List ZIP Files</button><div id="zipOut" class="output"></div></div>
+    <div class="card tool" data-name="file compressor zip"><h3>File Compressor</h3><input id="fileCompress" type="file" multiple><button onclick="multiUploadDownload('/api/tools/file-compress','fileCompress','files','compressed-files.zip')">Compress to ZIP</button></div>
   </div>
 
-  <h2>⚡ Utility Tools</h2>
+  <h2>⚡ Complex Utility Tools</h2>
   <div class="grid">
-    <div class="card tool" data-name="unit converter">
-      <h3>Unit Converter</h3>
-      <input id="unitValue" type="number" placeholder="Value">
-      <select id="unitType">
-        <option value="km-mi">KM to Miles</option>
-        <option value="mi-km">Miles to KM</option>
-        <option value="kg-lb">KG to Pounds</option>
-        <option value="lb-kg">Pounds to KG</option>
-      </select>
-      <button onclick="unitConvert()">Convert</button>
-      <div id="unitOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="currency converter">
-      <h3>Currency Converter</h3>
-      <input id="currencyAmount" type="number" placeholder="Amount">
-      <select id="currencyType">
-        <option value="usd-kes">USD to KES</option>
-        <option value="kes-usd">KES to USD</option>
-      </select>
-      <button onclick="currencyConvert()">Convert</button>
-      <div id="currencyOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="loan calculator">
-      <h3>Loan Calculator</h3>
-      <input id="loanAmount" type="number" placeholder="Amount">
-      <input id="loanRate" type="number" placeholder="Annual rate %">
-      <input id="loanMonths" type="number" placeholder="Months">
-      <button onclick="loanCalculator()">Calculate</button>
-      <div id="loanOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="gpa calculator">
-      <h3>GPA Calculator</h3>
-      <textarea id="gpaScores" placeholder="A,B,C,A"></textarea>
-      <button onclick="gpaCalculator()">Calculate GPA</button>
-      <div id="gpaOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="age calculator">
-      <h3>Age Calculator</h3>
-      <input id="birthDate" type="date">
-      <button onclick="ageCalculator()">Calculate</button>
-      <div id="ageOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="percentage calculator">
-      <h3>Percentage Calculator</h3>
-      <input id="percentValue" type="number" placeholder="Value">
-      <input id="percentTotal" type="number" placeholder="Total">
-      <button onclick="percentageCalc()">Calculate</button>
-      <div id="percentOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="qr generator">
-      <h3>QR Generator</h3>
-      <input id="qrText" placeholder="Text or URL">
-      <button onclick="generateQR()">Generate</button>
-      <div id="qrOut"></div>
-    </div>
-
-    <div class="card tool" data-name="base64 encoder decoder">
-      <h3>Base64 Encoder / Decoder</h3>
-      <textarea id="base64Text"></textarea>
-      <button onclick="base64Encode()">Encode</button>
-      <button onclick="base64Decode()">Decode</button>
-      <div id="base64Out" class="output"></div>
-    </div>
+    <div class="card tool" data-name="unit converter length weight temperature"><h3>Advanced Unit Converter</h3><input id="unitValue" type="number" placeholder="Value"><select id="unitType"><option value="km-mi">KM to Miles</option><option value="mi-km">Miles to KM</option><option value="kg-lb">KG to Pounds</option><option value="lb-kg">Pounds to KG</option><option value="c-f">Celsius to Fahrenheit</option><option value="f-c">Fahrenheit to Celsius</option><option value="m-ft">Meters to Feet</option><option value="ft-m">Feet to Meters</option><option value="l-gal">Liters to Gallons</option><option value="gal-l">Gallons to Liters</option></select><button onclick="unitConvert()">Convert</button><div id="unitOut" class="output"></div></div>
+    <div class="card tool" data-name="currency converter"><h3>Currency Converter</h3><input id="currencyAmount" type="number" placeholder="Amount"><select id="currencyType"><option value="usd-kes">USD to KES</option><option value="kes-usd">KES to USD</option><option value="eur-kes">EUR to KES</option><option value="gbp-kes">GBP to KES</option></select><button onclick="currencyConvert()">Convert</button><div id="currencyOut" class="output"></div></div>
+    <div class="card tool" data-name="loan calculator compound interest mortgage"><h3>Loan + Interest Calculator</h3><input id="loanAmount" type="number" placeholder="Amount"><input id="loanRate" type="number" placeholder="Annual rate %"><input id="loanMonths" type="number" placeholder="Months"><button onclick="loanCalculator()">Calculate Loan</button><button onclick="compoundInterest()">Compound</button><div id="loanOut" class="output"></div></div>
+    <div class="card tool" data-name="gpa calculator grade"><h3>GPA Calculator</h3><textarea id="gpaScores" placeholder="A,B,C,A"></textarea><button onclick="gpaCalculator()">Calculate GPA</button><div id="gpaOut" class="output"></div></div>
+    <div class="card tool" data-name="age birthday calculator"><h3>Age Calculator</h3><input id="birthDate" type="date"><button onclick="ageCalculator()">Calculate</button><div id="ageOut" class="output"></div></div>
+    <div class="card tool" data-name="percentage profit discount tax"><h3>Percentage Suite</h3><input id="percentValue" type="number" placeholder="Value"><input id="percentTotal" type="number" placeholder="Total"><button onclick="percentageCalc()">Percentage</button><button onclick="discountCalc()">Discount 10%</button><button onclick="profitCalc()">Profit Margin</button><div id="percentOut" class="output"></div></div>
+    <div class="card tool" data-name="random password names number"><h3>Random Generator</h3><select id="randomType"><option value="name">Name</option><option value="number">Number</option><option value="password">Password</option><option value="pin">PIN</option><option value="color">Color</option></select><button onclick="randomGenerator()">Generate</button><div id="randomOut" class="output"></div></div>
+    <div class="card tool" data-name="qr generator"><h3>QR Generator</h3><input id="qrText" placeholder="Text or URL"><button onclick="generateQR()">Generate</button><div id="qrOut"></div></div>
+    <div class="card tool" data-name="base64 encoder decoder"><h3>Base64 Encoder / Decoder</h3><textarea id="base64Text"></textarea><button onclick="base64Encode()">Encode</button><button onclick="base64Decode()">Decode</button><div id="base64Out" class="output"></div></div>
+    <div class="card tool" data-name="text stats word counter"><h3>Text Analyzer</h3><textarea id="textStatsInput"></textarea><button onclick="textStats()">Analyze</button><div id="textStatsOut" class="output"></div></div>
+    <div class="card tool" data-name="case converter slug reverse"><h3>Case Converter</h3><textarea id="caseInput"></textarea><select id="caseMode"><option value="upper">UPPERCASE</option><option value="lower">lowercase</option><option value="title">Title Case</option><option value="sentence">Sentence case</option><option value="reverse">Reverse</option><option value="slug">Slug</option></select><button onclick="caseConvert()">Convert</button><div id="caseOut" class="output"></div></div>
+    <div class="card tool" data-name="bmi calculator health"><h3>BMI Calculator</h3><input id="bmiWeight" type="number" placeholder="Weight kg"><input id="bmiHeight" type="number" placeholder="Height meters"><button onclick="bmiCalc()">Calculate BMI</button><div id="bmiOut" class="output"></div></div>
   </div>
 
   <h2>🧑‍💻 Developer Tools</h2>
   <div class="grid">
-    <div class="card tool" data-name="sql formatter">
-      <h3>SQL Formatter</h3>
-      <textarea id="sqlInput"></textarea>
-      <button onclick="sqlFormatter()">Format</button>
-      <div id="sqlOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="regex tester">
-      <h3>Regex Tester</h3>
-      <input id="regexPattern" placeholder="Pattern">
-      <textarea id="regexText" placeholder="Text"></textarea>
-      <button onclick="regexTester()">Test</button>
-      <div id="regexOut" class="output"></div>
-    </div>
-
-    <div class="card tool premium" data-name="api tester premium">
-      <h3>API Tester Premium</h3>
-      <select id="apiMethod"><option>GET</option><option>POST</option></select>
-      <input id="apiUrl" placeholder="https://api.example.com">
-      <textarea id="apiBody" placeholder='{"hello":"world"}'></textarea>
-      <button onclick="apiTester()">Send</button>
-      <div id="apiOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="code beautifier">
-      <h3>Code Beautifier</h3>
-      <textarea id="codeInput"></textarea>
-      <button onclick="codeBeautifier()">Beautify</button>
-      <div id="codeOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="uuid generator">
-      <h3>UUID Generator</h3>
-      <button onclick="uuidGenerator()">Generate UUID</button>
-      <div id="uuidOut" class="output"></div>
-    </div>
-
-    <div class="card tool" data-name="hash generator md5 sha256">
-      <h3>Hash Generator</h3>
-      <textarea id="hashText"></textarea>
-      <select id="hashAlgo">
-        <option value="md5">MD5</option>
-        <option value="sha1">SHA1</option>
-        <option value="sha256">SHA256</option>
-        <option value="sha512">SHA512</option>
-      </select>
-      <button onclick="hashGenerator()">Hash</button>
-      <div id="hashOut" class="output"></div>
-    </div>
+    <div class="card tool" data-name="sql formatter"><h3>SQL Formatter</h3><textarea id="sqlInput"></textarea><button onclick="sqlFormatter()">Format</button><div id="sqlOut" class="output"></div></div>
+    <div class="card tool" data-name="regex tester"><h3>Regex Tester</h3><input id="regexPattern" placeholder="Pattern"><textarea id="regexText"></textarea><button onclick="regexTester()">Test</button><div id="regexOut" class="output"></div></div>
+    <div class="card tool premium" data-name="api tester premium"><h3>API Tester Premium</h3><select id="apiMethod"><option>GET</option><option>POST</option></select><input id="apiUrl" placeholder="https://api.example.com"><textarea id="apiBody" placeholder='{"hello":"world"}'></textarea><button onclick="apiTester()">Send</button><div id="apiOut" class="output"></div></div>
+    <div class="card tool" data-name="code beautifier"><h3>Code Beautifier</h3><textarea id="codeInput"></textarea><button onclick="codeBeautifier()">Beautify</button><div id="codeOut" class="output"></div></div>
+    <div class="card tool" data-name="uuid generator"><h3>UUID Generator</h3><button onclick="uuidGenerator()">Generate UUID</button><div id="uuidOut" class="output"></div></div>
+    <div class="card tool" data-name="hash generator md5 sha256"><h3>Hash Generator</h3><textarea id="hashText"></textarea><select id="hashAlgo"><option value="md5">MD5</option><option value="sha1">SHA1</option><option value="sha256">SHA256</option><option value="sha512">SHA512</option></select><button onclick="hashGenerator()">Hash</button><div id="hashOut" class="output"></div></div>
   </div>
 </section>
 
@@ -411,378 +273,94 @@ const API = window.location.origin;
 let token = localStorage.getItem("smarttools_token");
 let currentUser = JSON.parse(localStorage.getItem("smarttools_user") || "null");
 
-function headersJSON(){
-  const h = {"Content-Type":"application/json"};
-  if(token) h.Authorization = "Bearer " + token;
-  return h;
-}
-
-function authHeader(){
-  return token ? {Authorization:"Bearer " + token} : {};
-}
-
-function showPage(id){
-  document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
-}
-
-function updateNav(){
-  document.getElementById("authNav").classList.toggle("hidden", !!token);
-  document.getElementById("logoutNav").classList.toggle("hidden", !token);
-  updateAdsVisibility();
-}
-
-function updateAdsVisibility(){
-  const hideAds = currentUser && currentUser.plan === "premium";
-  document.querySelectorAll(".ad-only").forEach(a=>{
-    a.style.display = hideAds ? "none" : "block";
-  });
-}
-
+function headersJSON(){const h={"Content-Type":"application/json"};if(token)h.Authorization="Bearer "+token;return h}
+function authHeader(){return token?{Authorization:"Bearer "+token}:{}}
+function showPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+function updateNav(){authNav.classList.toggle("hidden",!!token);logoutNav.classList.toggle("hidden",!token);updateAdsVisibility()}
+function updateAdsVisibility(){const hide=currentUser&&currentUser.plan==="premium";document.querySelectorAll(".ad-only").forEach(a=>a.style.display=hide?"none":"block")}
 updateNav();
 
-function toast(msg){ alert(msg); }
-
-function downloadBlob(blob, filename){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+function downloadBlob(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url)}
 
 async function signup(){
-  const res = await fetch(API+"/api/auth/signup",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({
-      name:authName.value,
-      email:authEmail.value,
-      password:authPassword.value
-    })
-  });
-  const data = await res.json();
-  if(data.token){
-    token=data.token;
-    currentUser=data.user;
-    localStorage.setItem("smarttools_token",token);
-    localStorage.setItem("smarttools_user",JSON.stringify(currentUser));
-    updateNav();
-  }
-  authOutput.innerText=data.message||data.error;
+ const res=await fetch(API+"/api/auth/signup",{method:"POST",headers:headersJSON(),body:JSON.stringify({name:authName.value,email:authEmail.value,password:authPassword.value})});
+ const data=await res.json();
+ if(data.token){token=data.token;currentUser=data.user;localStorage.setItem("smarttools_token",token);localStorage.setItem("smarttools_user",JSON.stringify(currentUser));updateNav()}
+ authOutput.innerText=data.message||data.error;
 }
-
 async function login(){
-  const res = await fetch(API+"/api/auth/login",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({email:authEmail.value,password:authPassword.value})
-  });
-  const data = await res.json();
-  if(data.token){
-    token=data.token;
-    currentUser=data.user;
-    localStorage.setItem("smarttools_token",token);
-    localStorage.setItem("smarttools_user",JSON.stringify(currentUser));
-    updateNav();
-    showPage("dashboard");
-  }
-  authOutput.innerText=data.message||data.error;
+ const res=await fetch(API+"/api/auth/login",{method:"POST",headers:headersJSON(),body:JSON.stringify({email:authEmail.value,password:authPassword.value})});
+ const data=await res.json();
+ if(data.token){token=data.token;currentUser=data.user;localStorage.setItem("smarttools_token",token);localStorage.setItem("smarttools_user",JSON.stringify(currentUser));updateNav();showPage("dashboard")}
+ authOutput.innerText=data.message||data.error;
 }
-
-function logout(){
-  token=null;
-  currentUser=null;
-  localStorage.removeItem("smarttools_token");
-  localStorage.removeItem("smarttools_user");
-  updateNav();
-  showPage("home");
-}
-
-async function refreshMe(){
-  if(!token) return;
-  const res = await fetch(API+"/api/auth/me",{headers:authHeader()});
-  const data = await res.json();
-  if(data.user){
-    currentUser=data.user;
-    localStorage.setItem("smarttools_user",JSON.stringify(currentUser));
-    updateNav();
-  }
-}
-
-async function loadDashboard(){
-  if(!token) return dashboardOutput.innerText="Login first.";
-  await refreshMe();
-  const res=await fetch(API+"/api/dashboard",{headers:authHeader()});
-  const data=await res.json();
-  dashboardOutput.innerText=JSON.stringify(data,null,2);
-}
-
-async function markNotificationsRead(){
-  if(!token) return alert("Login first");
-  const res=await fetch(API+"/api/notifications/read",{method:"POST",headers:headersJSON()});
-  const data=await res.json();
-  alert(data.message||data.error);
-}
-
-async function fav(toolName){
-  if(!token) return alert("Login first");
-  const res=await fetch(API+"/api/favorites",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({toolName})
-  });
-  const data=await res.json();
-  alert(data.message||data.error);
-}
-
-async function payMpesa(){
-  if(!token) return alert("Login first");
-  const res = await fetch(API+"/api/mpesa/stk",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({
-      phone:mpesaPhone.value,
-      amount:mpesaAmount.value || 200
-    })
-  });
-  const data=await res.json();
-  paymentOut.innerText=JSON.stringify(data,null,2);
-}
-
-async function manualPremium(){
-  if(!token) return alert("Login first");
-  const res=await fetch(API+"/api/subscription/manual-upgrade",{
-    method:"POST",
-    headers:headersJSON()
-  });
-  const data=await res.json();
-  paymentOut.innerText=data.message||data.error;
-  await refreshMe();
-}
+function logout(){token=null;currentUser=null;localStorage.removeItem("smarttools_token");localStorage.removeItem("smarttools_user");updateNav();showPage("home")}
+async function refreshMe(){if(!token)return;const res=await fetch(API+"/api/auth/me",{headers:authHeader()});const data=await res.json();if(data.user){currentUser=data.user;localStorage.setItem("smarttools_user",JSON.stringify(currentUser));updateNav()}}
+async function loadDashboard(){if(!token)return dashboardOutput.innerText="Login first.";await refreshMe();const res=await fetch(API+"/api/dashboard",{headers:authHeader()});const data=await res.json();dashboardOutput.innerText=JSON.stringify(data,null,2)}
+async function markNotificationsRead(){if(!token)return alert("Login first");const res=await fetch(API+"/api/notifications/read",{method:"POST",headers:headersJSON()});const data=await res.json();alert(data.message||data.error)}
+async function payMpesa(){if(!token)return alert("Login first");const res=await fetch(API+"/api/mpesa/stk",{method:"POST",headers:headersJSON(),body:JSON.stringify({phone:mpesaPhone.value,amount:mpesaAmount.value||200})});const data=await res.json();paymentOut.innerText=JSON.stringify(data,null,2)}
+async function manualPremium(){if(!token)return alert("Login first");const res=await fetch(API+"/api/subscription/manual-upgrade",{method:"POST",headers:headersJSON()});const data=await res.json();paymentOut.innerText=data.message||data.error;await refreshMe()}
 
 async function fileUploadDownload(url,inputId,fieldName,filename,extra={}){
-  const file=document.getElementById(inputId).files[0];
-  if(!file) return alert("Choose file first");
-  const fd=new FormData();
-  fd.append(fieldName,file);
-  Object.entries(extra).forEach(([k,v])=>fd.append(k,v));
-  const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
-  if(!res.ok){
-    const data=await res.json();
-    return alert(data.error);
-  }
-  downloadBlob(await res.blob(),filename);
+ const file=document.getElementById(inputId).files[0];if(!file)return alert("Choose file first");
+ const fd=new FormData();fd.append(fieldName,file);Object.entries(extra).forEach(([k,v])=>fd.append(k,v));
+ const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
+ if(!res.ok){const data=await res.json();return alert(data.error)}
+ downloadBlob(await res.blob(),filename);
 }
-
 async function multiUploadDownload(url,inputId,fieldName,filename){
-  const files=document.getElementById(inputId).files;
-  if(!files.length) return alert("Choose files first");
-  const fd=new FormData();
-  for(const file of files) fd.append(fieldName,file);
-  const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
-  if(!res.ok){
-    const data=await res.json();
-    return alert(data.error);
-  }
-  downloadBlob(await res.blob(),filename);
+ const files=document.getElementById(inputId).files;if(!files.length)return alert("Choose files first");
+ const fd=new FormData();for(const file of files)fd.append(fieldName,file);
+ const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
+ if(!res.ok){const data=await res.json();return alert(data.error)}
+ downloadBlob(await res.blob(),filename);
+}
+async function jsonUpload(url,inputId,fieldName,outId){
+ const file=document.getElementById(inputId).files[0];if(!file)return alert("Choose file first");
+ const fd=new FormData();fd.append(fieldName,file);
+ const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
+ const data=await res.json();document.getElementById(outId).innerText=JSON.stringify(data,null,2);
 }
 
-async function jsonUpload(url,inputId,fieldName,outId,extra={}){
-  const file=document.getElementById(inputId).files[0];
-  if(!file) return alert("Choose file first");
-  const fd=new FormData();
-  fd.append(fieldName,file);
-  Object.entries(extra).forEach(([k,v])=>fd.append(k,v));
-  const res=await fetch(API+url,{method:"POST",headers:authHeader(),body:fd});
-  const data=await res.json();
-  document.getElementById(outId).innerText=JSON.stringify(data,null,2);
-}
+function pdfSplit(){fileUploadDownload("/api/tools/pdf-split","splitPdf","pdf","split.pdf",{start:splitStart.value,end:splitEnd.value})}
+function pdfWatermark(){fileUploadDownload("/api/tools/pdf-watermark","watermarkPdf","pdf","watermarked.pdf",{text:pdfWatermarkText.value})}
+function imageCompress(){fileUploadDownload("/api/tools/image-compress","compressImage","image","compressed-image.jpg",{quality:imageQuality.value})}
+function imageResize(){fileUploadDownload("/api/tools/image-resize","resizeImage","image","resized-image.jpg",{width:resizeWidth.value,height:resizeHeight.value})}
+function backgroundRemoveColor(){fileUploadDownload("/api/tools/background-remove-color","bgRemove","image","background-removed.png",{color:bgRemoveColor.value,threshold:bgThreshold.value})}
+function backgroundChanger(){fileUploadDownload("/api/tools/background-changer","bgChange","image","background-changed.png",{color:bgColor.value})}
+function imageConvert(){fileUploadDownload("/api/tools/image-convert","imageConvert","image","converted."+imageFormat.value,{format:imageFormat.value})}
+function imageCrop(){fileUploadDownload("/api/tools/image-crop","imageCrop","image","cropped.png",{left:cropLeft.value,top:cropTop.value,width:cropWidth.value,height:cropHeight.value})}
+function imageWatermark(){fileUploadDownload("/api/tools/image-watermark","imageWatermark","image","watermarked.png",{text:imageWatermarkText.value})}
+function imageEffect(){fileUploadDownload("/api/tools/image-effect","imageEffect","image","effect.jpg",{effect:effectMode.value})}
+function imageAdjust(){fileUploadDownload("/api/tools/image-adjust","customAdjustImage","image","adjusted.jpg",{brightness:brightness.value,saturation:saturation.value,hue:hue.value,contrast:contrast.value})}
 
-function pdfSplit(){
-  fileUploadDownload("/api/tools/pdf-split","splitPdf","pdf","split.pdf",{
-    start:splitStart.value,
-    end:splitEnd.value
-  });
-}
+async function generateQR(){const res=await fetch(API+"/api/tools/qr",{method:"POST",headers:headersJSON(),body:JSON.stringify({text:qrText.value})});const data=await res.json();qrOut.innerHTML=data.qrImage?`<img class="qr" src="${data.qrImage}">`:data.error}
+async function textStats(){const res=await fetch(API+"/api/tools/text-stats",{method:"POST",headers:headersJSON(),body:JSON.stringify({text:textStatsInput.value})});const data=await res.json();textStatsOut.innerText=JSON.stringify(data,null,2)}
+async function caseConvert(){const res=await fetch(API+"/api/tools/case-converter",{method:"POST",headers:headersJSON(),body:JSON.stringify({text:caseInput.value,mode:caseMode.value})});const data=await res.json();caseOut.innerText=data.output||data.error}
+async function hashGenerator(){const res=await fetch(API+"/api/tools/hash",{method:"POST",headers:headersJSON(),body:JSON.stringify({text:hashText.value,algorithm:hashAlgo.value})});const data=await res.json();hashOut.innerText=data.hash||data.error}
+async function apiTester(){let body=null;try{body=apiBody.value?JSON.parse(apiBody.value):undefined}catch{return apiOut.innerText="Invalid JSON body"}const res=await fetch(API+"/api/tools/api-tester",{method:"POST",headers:headersJSON(),body:JSON.stringify({method:apiMethod.value,url:apiUrl.value,body})});const data=await res.json();apiOut.innerText=JSON.stringify(data,null,2)}
 
-function pdfWatermark(){
-  fileUploadDownload("/api/tools/pdf-watermark","watermarkPdf","pdf","watermarked.pdf",{
-    text:pdfWatermarkText.value
-  });
-}
-
-function pdfInfoTool(){
-  jsonUpload("/api/tools/pdf-info","pdfInfo","pdf","pdfInfoOut");
-}
-
-function imageCompress(){
-  fileUploadDownload("/api/tools/image-compress","compressImage","image","compressed-image.jpg",{quality:imageQuality.value});
-}
-
-function imageResize(){
-  fileUploadDownload("/api/tools/image-resize","resizeImage","image","resized-image.jpg",{width:resizeWidth.value,height:resizeHeight.value});
-}
-
-function backgroundRemoveColor(){
-  fileUploadDownload("/api/tools/background-remove-color","bgRemove","image","background-removed.png",{
-    color:bgRemoveColor.value,
-    threshold:bgThreshold.value
-  });
-}
-
-function backgroundChanger(){
-  fileUploadDownload("/api/tools/background-changer","bgChange","image","background-changed.png",{color:bgColor.value});
-}
-
-function imageConvert(){
-  fileUploadDownload("/api/tools/image-convert","imageConvert","image","converted."+imageFormat.value,{format:imageFormat.value});
-}
-
-function imageCrop(){
-  fileUploadDownload("/api/tools/image-crop","imageCrop","image","cropped.png",{
-    left:cropLeft.value,top:cropTop.value,width:cropWidth.value,height:cropHeight.value
-  });
-}
-
-function imageWatermark(){
-  fileUploadDownload("/api/tools/image-watermark","imageWatermark","image","watermarked.png",{text:imageWatermarkText.value});
-}
-
-function imageEffect(){
-  fileUploadDownload("/api/tools/image-effect","imageEffect","image","effect.png",{effect:effectMode.value});
-}
-
-async function zipExtractTool(){
-  await jsonUpload("/api/tools/zip-extract","zipExtract","zip","zipOut");
-}
-
-async function generateQR(){
-  const res=await fetch(API+"/api/tools/qr",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({text:qrText.value})
-  });
-  const data=await res.json();
-  qrOut.innerHTML=data.qrImage?`<img class="qr" src="${data.qrImage}">`:data.error;
-}
-
-function unitConvert(){
-  const v=Number(unitValue.value);
-  const t=unitType.value;
-  let r=0;
-  if(t==="km-mi") r=v*0.621371;
-  if(t==="mi-km") r=v*1.60934;
-  if(t==="kg-lb") r=v*2.20462;
-  if(t==="lb-kg") r=v*0.453592;
-  unitOut.innerText=r;
-}
-
-function currencyConvert(){
-  const v=Number(currencyAmount.value);
-  const rate=130;
-  currencyOut.innerText=currencyType.value==="usd-kes"?v*rate:v/rate;
-}
-
-function loanCalculator(){
-  const p=Number(loanAmount.value), r=Number(loanRate.value)/100/12, n=Number(loanMonths.value);
-  const m=p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
-  loanOut.innerText=`Monthly: ${m.toFixed(2)}\nTotal: ${(m*n).toFixed(2)}`;
-}
-
-function gpaCalculator(){
-  const map={A:4,B:3,C:2,D:1,E:0,F:0};
-  const arr=gpaScores.value.toUpperCase().split(",").map(x=>x.trim()).filter(Boolean);
-  const avg=arr.reduce((s,g)=>s+(map[g]??0),0)/arr.length;
-  gpaOut.innerText="GPA: "+avg.toFixed(2);
-}
-
-function ageCalculator(){
-  const b=new Date(birthDate.value);
-  const now=new Date();
-  let age=now.getFullYear()-b.getFullYear();
-  if(now.getMonth()<b.getMonth() || (now.getMonth()===b.getMonth() && now.getDate()<b.getDate())) age--;
-  ageOut.innerText=age+" years";
-}
-
-function percentageCalc(){
-  percentOut.innerText=((Number(percentValue.value)/Number(percentTotal.value))*100).toFixed(2)+"%";
-}
-
-function base64Encode(){
-  base64Out.innerText=btoa(unescape(encodeURIComponent(base64Text.value)));
-}
-
-function base64Decode(){
-  try{base64Out.innerText=decodeURIComponent(escape(atob(base64Text.value)))}catch{base64Out.innerText="Invalid Base64"}
-}
-
-function sqlFormatter(){
-  sqlOut.innerText=sqlInput.value
-    .replace(/\bSELECT\b/gi,"\nSELECT")
-    .replace(/\bFROM\b/gi,"\nFROM")
-    .replace(/\bWHERE\b/gi,"\nWHERE")
-    .replace(/\bORDER BY\b/gi,"\nORDER BY")
-    .replace(/\bGROUP BY\b/gi,"\nGROUP BY");
-}
-
-function regexTester(){
-  try{
-    const re=new RegExp(regexPattern.value,"g");
-    regexOut.innerText=JSON.stringify([...regexText.value.matchAll(re)].map(m=>m[0]),null,2);
-  }catch(e){regexOut.innerText=e.message}
-}
-
-async function apiTester(){
-  let body=null;
-  try{body=apiBody.value?JSON.parse(apiBody.value):undefined}catch{return apiOut.innerText="Invalid JSON body"}
-  const res=await fetch(API+"/api/tools/api-tester",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({method:apiMethod.value,url:apiUrl.value,body})
-  });
-  const data=await res.json();
-  apiOut.innerText=JSON.stringify(data,null,2);
-}
-
-function codeBeautifier(){
-  codeOut.innerText=codeInput.value.replace(/;/g,";\n").replace(/{/g,"{\n").replace(/}/g,"\n}");
-}
-
-function uuidGenerator(){
-  uuidOut.innerText=crypto.randomUUID();
-}
-
-async function hashGenerator(){
-  const res=await fetch(API+"/api/tools/hash",{
-    method:"POST",
-    headers:headersJSON(),
-    body:JSON.stringify({text:hashText.value,algorithm:hashAlgo.value})
-  });
-  const data=await res.json();
-  hashOut.innerText=data.hash||data.error;
-}
-
-function filterTools(){
-  const q=toolSearch.value.toLowerCase();
-  document.querySelectorAll(".tool").forEach(card=>{
-    card.style.display=card.dataset.name.includes(q) ? "block" : "none";
-  });
-}
-
-function toggleDark(){
-  document.body.classList.toggle("dark");
-  localStorage.setItem("dark",document.body.classList.contains("dark"));
-}
-
-if(localStorage.getItem("dark")==="true") document.body.classList.add("dark");
-
-function changeLang(){
-  heroTitle.innerText=language.value==="sw"
-    ?"Zana za Bure Mtandaoni kwa PDF, Picha, Faili na Developers"
-    :"Free Online Tools for PDFs, Images, Files, Developers and Students";
-}
+function unitConvert(){const v=Number(unitValue.value),t=unitType.value;let r=0;if(t==="km-mi")r=v*.621371;if(t==="mi-km")r=v*1.60934;if(t==="kg-lb")r=v*2.20462;if(t==="lb-kg")r=v*.453592;if(t==="c-f")r=v*9/5+32;if(t==="f-c")r=(v-32)*5/9;if(t==="m-ft")r=v*3.28084;if(t==="ft-m")r=v*.3048;if(t==="l-gal")r=v*.264172;if(t==="gal-l")r=v*3.78541;unitOut.innerText=r.toFixed(4)}
+function currencyConvert(){const v=Number(currencyAmount.value);const rates={"usd-kes":130,"kes-usd":1/130,"eur-kes":145,"gbp-kes":170};currencyOut.innerText=(v*rates[currencyType.value]).toFixed(2)}
+function loanCalculator(){const p=Number(loanAmount.value),r=Number(loanRate.value)/100/12,n=Number(loanMonths.value);const m=p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);loanOut.innerText=`Monthly: ${m.toFixed(2)}\nTotal: ${(m*n).toFixed(2)}\nInterest: ${(m*n-p).toFixed(2)}`}
+function compoundInterest(){const p=Number(loanAmount.value),r=Number(loanRate.value)/100,n=Number(loanMonths.value)/12;loanOut.innerText=`Compound Total: ${(p*Math.pow(1+r,n)).toFixed(2)}`}
+function gpaCalculator(){const map={A:4,B:3,C:2,D:1,E:0,F:0};const arr=gpaScores.value.toUpperCase().split(",").map(x=>x.trim()).filter(Boolean);const avg=arr.reduce((s,g)=>s+(map[g]??0),0)/arr.length;gpaOut.innerText="GPA: "+avg.toFixed(2)}
+function ageCalculator(){const b=new Date(birthDate.value),now=new Date();let age=now.getFullYear()-b.getFullYear();if(now.getMonth()<b.getMonth()||(now.getMonth()===b.getMonth()&&now.getDate()<b.getDate()))age--;ageOut.innerText=`${age} years\nDays lived: ${Math.floor((now-b)/(1000*60*60*24))}`}
+function percentageCalc(){percentOut.innerText=((Number(percentValue.value)/Number(percentTotal.value))*100).toFixed(2)+"%"}
+function discountCalc(){percentOut.innerText="After 10% discount: "+(Number(percentValue.value)*.9).toFixed(2)}
+function profitCalc(){percentOut.innerText="Profit margin: "+(((Number(percentTotal.value)-Number(percentValue.value))/Number(percentTotal.value))*100).toFixed(2)+"%"}
+function randomGenerator(){const names=["Collins","Mary","Leila","Brian","Amina","Kevin","Grace","Victor"];if(randomType.value==="name")randomOut.innerText=names[Math.floor(Math.random()*names.length)];if(randomType.value==="number")randomOut.innerText=Math.floor(Math.random()*1000000);if(randomType.value==="password")randomOut.innerText=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);if(randomType.value==="pin")randomOut.innerText=Math.floor(1000+Math.random()*9000);if(randomType.value==="color")randomOut.innerText="#"+Math.floor(Math.random()*16777215).toString(16)}
+function base64Encode(){base64Out.innerText=btoa(unescape(encodeURIComponent(base64Text.value)))}
+function base64Decode(){try{base64Out.innerText=decodeURIComponent(escape(atob(base64Text.value)))}catch{base64Out.innerText="Invalid Base64"}}
+function bmiCalc(){const w=Number(bmiWeight.value),h=Number(bmiHeight.value);const bmi=w/(h*h);bmiOut.innerText=`BMI: ${bmi.toFixed(2)}\n${bmi<18.5?"Underweight":bmi<25?"Normal":bmi<30?"Overweight":"Obese"}`}
+function sqlFormatter(){sqlOut.innerText=sqlInput.value.replace(/\bSELECT\b/gi,"\nSELECT").replace(/\bFROM\b/gi,"\nFROM").replace(/\bWHERE\b/gi,"\nWHERE").replace(/\bORDER BY\b/gi,"\nORDER BY").replace(/\bGROUP BY\b/gi,"\nGROUP BY")}
+function regexTester(){try{const re=new RegExp(regexPattern.value,"g");regexOut.innerText=JSON.stringify([...regexText.value.matchAll(re)].map(m=>m[0]),null,2)}catch(e){regexOut.innerText=e.message}}
+function codeBeautifier(){codeOut.innerText=codeInput.value.replace(/;/g,";\n").replace(/{/g,"{\n").replace(/}/g,"\n}")}
+function uuidGenerator(){uuidOut.innerText=crypto.randomUUID()}
+function filterTools(){const q=toolSearch.value.toLowerCase();document.querySelectorAll(".tool").forEach(card=>{card.style.display=card.dataset.name.includes(q)?"block":"none"})}
+function toggleDark(){document.body.classList.toggle("dark");localStorage.setItem("dark",document.body.classList.contains("dark"))}
+if(localStorage.getItem("dark")==="true")document.body.classList.add("dark");
+function changeLang(){heroTitle.innerText=language.value==="sw"?"Zana za Juu Mtandaoni kwa Picha, PDF, Faili na Developers":"Advanced Online Tools for Images, PDFs, Files, Developers and Students"}
 </script>
 
 </body>
