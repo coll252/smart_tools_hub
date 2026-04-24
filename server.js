@@ -10,7 +10,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const sharp = require("sharp");
 const QRCode = require("qrcode");
-const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
+const { PDFDocument, rgb, StandardFonts, degrees } = require("pdf-lib");
 const axios = require("axios");
 const { v4: uuidv4 } = require("uuid");
 const path = require("path");
@@ -23,7 +23,10 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || "change_this_secret";
+const FREE_DAILY_LIMIT = Number(process.env.FREE_DAILY_LIMIT || 30);
+const PREMIUM_DAILY_LIMIT = Number(process.env.PREMIUM_DAILY_LIMIT || 1000);
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 30);
+const PREMIUM_AMOUNT = Number(process.env.PREMIUM_AMOUNT || 200);
 
 const uploadDir = path.join(__dirname, "uploads");
 const publicDir = path.join(__dirname, "public");
@@ -75,6 +78,7 @@ async function createTables() {
       password VARCHAR(255) NOT NULL,
       role ENUM('user','admin') DEFAULT 'user',
       plan ENUM('free','premium') DEFAULT 'free',
+      premium_until DATETIME NULL,
       is_active BOOLEAN DEFAULT true,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -86,6 +90,7 @@ async function createTables() {
       user_id INT NULL,
       tool_name VARCHAR(100) NOT NULL,
       ip_address VARCHAR(100),
+      file_size BIGINT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -122,6 +127,20 @@ async function createTables() {
   `);
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      checkout_request_id VARCHAR(150),
+      merchant_request_id VARCHAR(150),
+      phone VARCHAR(50),
+      amount DECIMAL(10,2),
+      status ENUM('pending','success','failed') DEFAULT 'pending',
+      raw_response JSON NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS feedback (
       id INT AUTO_INCREMENT PRIMARY KEY,
       user_id INT NULL,
@@ -147,6 +166,24 @@ function signToken(user) {
   );
 }
 
+async function refreshPremiumStatus(userId) {
+  const [rows] = await db.query(
+    "SELECT premium_until FROM users WHERE id=?",
+    [userId]
+  );
+
+  if (!rows.length) return;
+
+  const premiumUntil = rows[0].premium_until;
+
+  if (premiumUntil && new Date(premiumUntil) < new Date()) {
+    await db.query(
+      "UPDATE users SET plan='free', premium_until=NULL WHERE id=?",
+      [userId]
+    );
+  }
+}
+
 async function authOptional(req, res, next) {
   try {
     const header = req.headers.authorization;
@@ -158,8 +195,10 @@ async function authOptional(req, res, next) {
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    await refreshPremiumStatus(decoded.id);
+
     const [rows] = await db.query(
-      "SELECT id, uuid, name, email, role, plan, is_active FROM users WHERE id = ?",
+      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id = ?",
       [decoded.id]
     );
 
@@ -179,8 +218,10 @@ async function authRequired(req, res, next) {
     const token = header.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    await refreshPremiumStatus(decoded.id);
+
     const [rows] = await db.query(
-      "SELECT id, uuid, name, email, role, plan, is_active FROM users WHERE id = ?",
+      "SELECT id, uuid, name, email, role, plan, premium_until, is_active FROM users WHERE id = ?",
       [decoded.id]
     );
 
@@ -195,11 +236,51 @@ async function authRequired(req, res, next) {
   }
 }
 
-async function logToolUsage(req, toolName) {
+async function checkToolLimit(req, res, next) {
+  try {
+    const userId = req.user?.id || null;
+    const ip = req.ip;
+    const limit = req.user?.plan === "premium" ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT;
+
+    let rows;
+
+    if (userId) {
+      [rows] = await db.query(
+        "SELECT COUNT(*) AS total FROM tool_usage WHERE user_id=? AND DATE(created_at)=CURDATE()",
+        [userId]
+      );
+    } else {
+      [rows] = await db.query(
+        "SELECT COUNT(*) AS total FROM tool_usage WHERE ip_address=? AND DATE(created_at)=CURDATE()",
+        [ip]
+      );
+    }
+
+    if (rows[0].total >= limit) {
+      return res.status(429).json({
+        error: "Daily free limit reached. Upgrade to Premium for more usage."
+      });
+    }
+
+    next();
+  } catch {
+    res.status(500).json({ error: "Limit check failed" });
+  }
+}
+
+function requirePremium(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: "Login required for premium tools" });
+  if (req.user.plan !== "premium") {
+    return res.status(403).json({ error: "Premium subscription required" });
+  }
+  next();
+}
+
+async function logToolUsage(req, toolName, fileSize = 0) {
   try {
     await db.query(
-      "INSERT INTO tool_usage (user_id, tool_name, ip_address) VALUES (?, ?, ?)",
-      [req.user?.id || null, toolName, req.ip]
+      "INSERT INTO tool_usage (user_id, tool_name, ip_address, file_size) VALUES (?, ?, ?, ?)",
+      [req.user?.id || null, toolName, req.ip, fileSize]
     );
   } catch {}
 }
@@ -212,6 +293,21 @@ async function saveFileHistory(req, toolName, originalName, outputName) {
     );
   } catch {}
 }
+
+async function notifyUser(userId, title, message) {
+  try {
+    await db.query(
+      "INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)",
+      [userId || null, title, message]
+    );
+  } catch {}
+}
+
+function downloadAndClean(res, filePath, fileName) {
+  res.download(filePath, fileName, () => safeDelete(filePath));
+}
+
+/* BASIC */
 
 app.get("/", (req, res) => {
   const file = path.join(publicDir, "index.html");
@@ -250,16 +346,17 @@ app.post("/api/auth/signup", async (req, res) => {
     );
 
     const [rows] = await db.query(
-      "SELECT id, uuid, name, email, role, plan FROM users WHERE id = ?",
+      "SELECT id, uuid, name, email, role, plan, premium_until FROM users WHERE id=?",
       [result.insertId]
     );
 
-    await db.query(
-      "INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)",
-      [result.insertId, "Welcome", "Your SmartTools account was created successfully."]
-    );
+    await notifyUser(result.insertId, "Welcome", "Your SmartTools account was created successfully.");
 
-    res.json({ message: "Signup successful", token: signToken(rows[0]), user: rows[0] });
+    res.json({
+      message: "Signup successful",
+      token: signToken(rows[0]),
+      user: rows[0]
+    });
   } catch (error) {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(400).json({ error: "Email already exists" });
@@ -273,7 +370,7 @@ app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
     const [rows] = await db.query(
-      "SELECT * FROM users WHERE email = ?",
+      "SELECT * FROM users WHERE email=?",
       [email.trim().toLowerCase()]
     );
 
@@ -284,16 +381,18 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (!match) return res.status(400).json({ error: "Invalid email or password" });
 
-    const cleanUser = {
-      id: user.id,
-      uuid: user.uuid,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      plan: user.plan
-    };
+    await refreshPremiumStatus(user.id);
 
-    res.json({ message: "Login successful", token: signToken(cleanUser), user: cleanUser });
+    const [cleanRows] = await db.query(
+      "SELECT id, uuid, name, email, role, plan, premium_until FROM users WHERE id=?",
+      [user.id]
+    );
+
+    res.json({
+      message: "Login successful",
+      token: signToken(cleanRows[0]),
+      user: cleanRows[0]
+    });
   } catch {
     res.status(500).json({ error: "Login failed" });
   }
@@ -303,41 +402,62 @@ app.get("/api/auth/me", authRequired, (req, res) => {
   res.json({ user: req.user });
 });
 
-/* USER DASHBOARD */
+/* DASHBOARD / PLATFORM */
 
 app.get("/api/dashboard", authRequired, async (req, res) => {
   const [[usage]] = await db.query(
-    "SELECT COUNT(*) AS total FROM tool_usage WHERE user_id = ?",
+    "SELECT COUNT(*) AS total FROM tool_usage WHERE user_id=?",
+    [req.user.id]
+  );
+
+  const [[today]] = await db.query(
+    "SELECT COUNT(*) AS total FROM tool_usage WHERE user_id=? AND DATE(created_at)=CURDATE()",
     [req.user.id]
   );
 
   const [recentTools] = await db.query(
-    "SELECT tool_name, created_at FROM tool_usage WHERE user_id = ? ORDER BY created_at DESC LIMIT 15",
+    "SELECT tool_name, created_at FROM tool_usage WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
     [req.user.id]
   );
 
+  const [popularTools] = await db.query(`
+    SELECT tool_name, COUNT(*) AS total
+    FROM tool_usage
+    GROUP BY tool_name
+    ORDER BY total DESC
+    LIMIT 10
+  `);
+
   const [files] = await db.query(
-    "SELECT tool_name, original_name, output_name, created_at FROM saved_files WHERE user_id = ? ORDER BY created_at DESC LIMIT 15",
+    "SELECT tool_name, original_name, output_name, created_at FROM saved_files WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
     [req.user.id]
   );
 
   const [favorites] = await db.query(
-    "SELECT tool_name, created_at FROM favorites WHERE user_id = ? ORDER BY created_at DESC",
+    "SELECT tool_name, created_at FROM favorites WHERE user_id=? ORDER BY created_at DESC",
     [req.user.id]
   );
 
   const [notifications] = await db.query(
-    "SELECT id, title, message, is_read, created_at FROM notifications WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC LIMIT 20",
+    "SELECT id, title, message, is_read, created_at FROM notifications WHERE user_id=? OR user_id IS NULL ORDER BY created_at DESC LIMIT 20",
     [req.user.id]
   );
 
   res.json({
     user: req.user,
     usageTotal: usage.total,
+    todayUsage: today.total,
+    dailyLimit: req.user.plan === "premium" ? PREMIUM_DAILY_LIMIT : FREE_DAILY_LIMIT,
     recentTools,
+    popularTools,
     files,
     favorites,
-    notifications
+    notifications,
+    recommendations: recentTools.slice(0, 5).map(t => {
+      if (t.tool_name.includes("pdf")) return "Try PDF Watermark or PDF Compressor";
+      if (t.tool_name.includes("image")) return "Try Image Convert or Image Watermark";
+      return "Try QR Generator or Hash Generator";
+    })
   });
 });
 
@@ -353,18 +473,220 @@ app.post("/api/favorites", authRequired, async (req, res) => {
   res.json({ message: "Added to favorites" });
 });
 
+app.post("/api/notifications/read", authRequired, async (req, res) => {
+  await db.query(
+    "UPDATE notifications SET is_read=true WHERE user_id=?",
+    [req.user.id]
+  );
+
+  res.json({ message: "Notifications marked as read" });
+});
+
+/* MONETIZATION */
+
+app.get("/api/pricing", (req, res) => {
+  res.json({
+    plans: [
+      {
+        name: "Free",
+        price: 0,
+        features: ["Ads shown", `${FREE_DAILY_LIMIT} tool uses/day`, "Basic tools"]
+      },
+      {
+        name: "Premium",
+        price: PREMIUM_AMOUNT,
+        currency: "KES",
+        features: ["No ads", `${PREMIUM_DAILY_LIMIT} tool uses/day`, "Premium tools", "Higher file limits"]
+      }
+    ]
+  });
+});
+
+app.post("/api/subscription/manual-upgrade", authRequired, async (req, res) => {
+  if (process.env.ALLOW_MANUAL_PREMIUM !== "true") {
+    return res.status(403).json({ error: "Manual upgrade disabled" });
+  }
+
+  await db.query(
+    "UPDATE users SET plan='premium', premium_until=DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id=?",
+    [req.user.id]
+  );
+
+  await notifyUser(req.user.id, "Premium Activated", "Your premium subscription is now active for 30 days.");
+
+  res.json({ message: "Premium activated for testing" });
+});
+
+/* MPESA */
+
+async function getMpesaAccessToken() {
+  const auth = Buffer.from(
+    `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
+  ).toString("base64");
+
+  const baseUrl = process.env.MPESA_ENV === "production"
+    ? "https://api.safaricom.co.ke"
+    : "https://sandbox.safaricom.co.ke";
+
+  const response = await axios.get(
+    `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
+    { headers: { Authorization: `Basic ${auth}` } }
+  );
+
+  return response.data.access_token;
+}
+
+app.post("/api/mpesa/stk", authRequired, async (req, res) => {
+  try {
+    const { phone, amount } = req.body;
+    const finalAmount = Number(amount || PREMIUM_AMOUNT);
+
+    if (!phone) return res.status(400).json({ error: "Phone required" });
+
+    const token = await getMpesaAccessToken();
+
+    const baseUrl = process.env.MPESA_ENV === "production"
+      ? "https://api.safaricom.co.ke"
+      : "https://sandbox.safaricom.co.ke";
+
+    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+
+    const shortcode = process.env.MPESA_SHORTCODE;
+    const passkey = process.env.MPESA_PASSKEY;
+    const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString("base64");
+
+    const payload = {
+      BusinessShortCode: shortcode,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: finalAmount,
+      PartyA: phone,
+      PartyB: shortcode,
+      PhoneNumber: phone,
+      CallBackURL: process.env.MPESA_CALLBACK_URL,
+      AccountReference: process.env.MPESA_ACCOUNT_REFERENCE || "SMARTTOOLS",
+      TransactionDesc: process.env.MPESA_TRANSACTION_DESC || "SmartTools Premium"
+    };
+
+    const response = await axios.post(
+      `${baseUrl}/mpesa/stkpush/v1/processrequest`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    await db.query(
+      `
+      INSERT INTO payments 
+      (user_id, checkout_request_id, merchant_request_id, phone, amount, status, raw_response)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?)
+      `,
+      [
+        req.user.id,
+        response.data.CheckoutRequestID,
+        response.data.MerchantRequestID,
+        phone,
+        finalAmount,
+        JSON.stringify(response.data)
+      ]
+    );
+
+    res.json({ message: "STK push sent. Complete payment on your phone.", data: response.data });
+  } catch (error) {
+    res.status(500).json({
+      error: "M-Pesa request failed",
+      details: error.response?.data || error.message
+    });
+  }
+});
+
+app.post("/api/mpesa/callback", async (req, res) => {
+  try {
+    const callback = req.body.Body?.stkCallback;
+    const checkoutId = callback?.CheckoutRequestID;
+    const resultCode = callback?.ResultCode;
+
+    if (checkoutId && resultCode === 0) {
+      const [payments] = await db.query(
+        "SELECT * FROM payments WHERE checkout_request_id=?",
+        [checkoutId]
+      );
+
+      if (payments.length) {
+        await db.query(
+          "UPDATE payments SET status='success', raw_response=? WHERE checkout_request_id=?",
+          [JSON.stringify(req.body), checkoutId]
+        );
+
+        await db.query(
+          "UPDATE users SET plan='premium', premium_until=DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id=?",
+          [payments[0].user_id]
+        );
+
+        await notifyUser(
+          payments[0].user_id,
+          "Premium Activated",
+          "Payment received. Your Premium subscription is active for 30 days."
+        );
+      }
+    }
+
+    if (checkoutId && resultCode !== 0) {
+      await db.query(
+        "UPDATE payments SET status='failed', raw_response=? WHERE checkout_request_id=?",
+        [JSON.stringify(req.body), checkoutId]
+      );
+    }
+
+    res.json({ ResultCode: 0, ResultDesc: "Accepted" });
+  } catch {
+    res.json({ ResultCode: 0, ResultDesc: "Accepted" });
+  }
+});
+
 /* PDF TOOLS */
 
-app.post("/api/tools/pdf-split", authOptional, upload.single("pdf"), async (req, res) => {
+app.post("/api/tools/pdf-merge", authOptional, checkToolLimit, upload.array("pdfs", 10), async (req, res) => {
   let outputPath;
+
+  try {
+    if (!req.files || req.files.length < 2) return res.status(400).json({ error: "Upload at least 2 PDFs" });
+
+    const mergedPdf = await PDFDocument.create();
+
+    for (const file of req.files) {
+      const pdfBytes = fs.readFileSync(file.path);
+      const pdf = await PDFDocument.load(pdfBytes);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach(page => mergedPdf.addPage(page));
+    }
+
+    outputPath = path.join(uploadDir, `merged-${Date.now()}.pdf`);
+    fs.writeFileSync(outputPath, await mergedPdf.save());
+
+    await logToolUsage(req, "pdf-merger");
+    await saveFileHistory(req, "pdf-merger", "multiple PDFs", "merged.pdf");
+
+    req.files.forEach(f => safeDelete(f.path));
+
+    downloadAndClean(res, outputPath, "merged.pdf");
+  } catch {
+    req.files?.forEach(f => safeDelete(f.path));
+    safeDelete(outputPath);
+    res.status(500).json({ error: "PDF merge failed" });
+  }
+});
+
+app.post("/api/tools/pdf-split", authOptional, checkToolLimit, upload.single("pdf"), async (req, res) => {
+  let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "PDF required" });
 
     const start = Math.max(Number(req.body.start || 1), 1);
     const endInput = Number(req.body.end || start);
 
-    const bytes = fs.readFileSync(req.file.path);
-    const srcPdf = await PDFDocument.load(bytes);
+    const srcPdf = await PDFDocument.load(fs.readFileSync(req.file.path));
     const totalPages = srcPdf.getPageCount();
     const end = Math.min(endInput, totalPages);
 
@@ -376,89 +698,54 @@ app.post("/api/tools/pdf-split", authOptional, upload.single("pdf"), async (req,
     const copied = await newPdf.copyPages(srcPdf, indices);
     copied.forEach(p => newPdf.addPage(p));
 
-    const out = await newPdf.save();
     outputPath = path.join(uploadDir, `split-${Date.now()}.pdf`);
-    fs.writeFileSync(outputPath, out);
+    fs.writeFileSync(outputPath, await newPdf.save());
 
     await logToolUsage(req, "pdf-splitter");
     await saveFileHistory(req, "pdf-splitter", req.file.originalname, "split.pdf");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "split.pdf", () => safeDelete(outputPath));
-  } catch (error) {
+    downloadAndClean(res, outputPath, "split.pdf");
+  } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
     res.status(500).json({ error: "PDF split failed" });
   }
 });
 
-app.post("/api/tools/pdf-merge", authOptional, upload.array("pdfs", 10), async (req, res) => {
+app.post("/api/tools/pdf-watermark", authOptional, checkToolLimit, upload.single("pdf"), async (req, res) => {
   let outputPath;
-  try {
-    if (!req.files || req.files.length < 2) {
-      return res.status(400).json({ error: "Upload at least 2 PDFs" });
-    }
 
-    const mergedPdf = await PDFDocument.create();
-
-    for (const file of req.files) {
-      const pdfBytes = fs.readFileSync(file.path);
-      const pdf = await PDFDocument.load(pdfBytes);
-      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      copiedPages.forEach(page => mergedPdf.addPage(page));
-    }
-
-    const mergedBytes = await mergedPdf.save();
-    outputPath = path.join(uploadDir, `merged-${Date.now()}.pdf`);
-    fs.writeFileSync(outputPath, mergedBytes);
-
-    await logToolUsage(req, "pdf-merger");
-    await saveFileHistory(req, "pdf-merger", "multiple PDFs", "merged.pdf");
-
-    req.files.forEach(file => safeDelete(file.path));
-
-    res.download(outputPath, "merged.pdf", () => safeDelete(outputPath));
-  } catch {
-    req.files?.forEach(file => safeDelete(file.path));
-    safeDelete(outputPath);
-    res.status(500).json({ error: "PDF merge failed" });
-  }
-});
-
-app.post("/api/tools/pdf-watermark", authOptional, upload.single("pdf"), async (req, res) => {
-  let outputPath;
   try {
     if (!req.file) return res.status(400).json({ error: "PDF required" });
 
     const text = req.body.text || "SmartTools";
-    const bytes = fs.readFileSync(req.file.path);
-    const pdf = await PDFDocument.load(bytes);
+    const pdf = await PDFDocument.load(fs.readFileSync(req.file.path));
     const font = await pdf.embedFont(StandardFonts.HelveticaBold);
 
     pdf.getPages().forEach(page => {
       const { width, height } = page.getSize();
       page.drawText(text, {
-        x: width / 4,
+        x: width / 5,
         y: height / 2,
         size: 42,
         font,
         color: rgb(0.75, 0.75, 0.75),
         opacity: 0.35,
-        rotate: { type: "degrees", angle: -30 }
+        rotate: degrees(-30)
       });
     });
 
-    const out = await pdf.save();
     outputPath = path.join(uploadDir, `watermarked-${Date.now()}.pdf`);
-    fs.writeFileSync(outputPath, out);
+    fs.writeFileSync(outputPath, await pdf.save());
 
     await logToolUsage(req, "pdf-watermark");
     await saveFileHistory(req, "pdf-watermark", req.file.originalname, "watermarked.pdf");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "watermarked.pdf", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "watermarked.pdf");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -466,24 +753,23 @@ app.post("/api/tools/pdf-watermark", authOptional, upload.single("pdf"), async (
   }
 });
 
-app.post("/api/tools/pdf-compress", authOptional, upload.single("pdf"), async (req, res) => {
+app.post("/api/tools/pdf-compress", authOptional, checkToolLimit, upload.single("pdf"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "PDF required" });
 
-    const bytes = fs.readFileSync(req.file.path);
-    const pdf = await PDFDocument.load(bytes);
-    const out = await pdf.save({ useObjectStreams: true });
-
+    const pdf = await PDFDocument.load(fs.readFileSync(req.file.path));
     outputPath = path.join(uploadDir, `compressed-${Date.now()}.pdf`);
-    fs.writeFileSync(outputPath, out);
+
+    fs.writeFileSync(outputPath, await pdf.save({ useObjectStreams: true }));
 
     await logToolUsage(req, "pdf-compressor");
     await saveFileHistory(req, "pdf-compressor", req.file.originalname, "compressed.pdf");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "compressed.pdf", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "compressed.pdf");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -491,69 +777,104 @@ app.post("/api/tools/pdf-compress", authOptional, upload.single("pdf"), async (r
   }
 });
 
-app.post("/api/tools/image-to-pdf", authOptional, upload.array("images", 20), async (req, res) => {
+app.post("/api/tools/pdf-page-numbers", authOptional, checkToolLimit, upload.single("pdf"), async (req, res) => {
   let outputPath;
+
   try {
-    if (!req.files || !req.files.length) {
-      return res.status(400).json({ error: "Images required" });
-    }
+    if (!req.file) return res.status(400).json({ error: "PDF required" });
+
+    const pdf = await PDFDocument.load(fs.readFileSync(req.file.path));
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+
+    pdf.getPages().forEach((page, index) => {
+      const { width } = page.getSize();
+      page.drawText(`${index + 1}`, {
+        x: width / 2,
+        y: 25,
+        size: 12,
+        font,
+        color: rgb(0, 0, 0)
+      });
+    });
+
+    outputPath = path.join(uploadDir, `numbered-${Date.now()}.pdf`);
+    fs.writeFileSync(outputPath, await pdf.save());
+
+    await logToolUsage(req, "pdf-page-numbers");
+    await saveFileHistory(req, "pdf-page-numbers", req.file.originalname, "numbered.pdf");
+
+    safeDelete(req.file.path);
+
+    downloadAndClean(res, outputPath, "numbered.pdf");
+  } catch {
+    safeDelete(req.file?.path);
+    safeDelete(outputPath);
+    res.status(500).json({ error: "Adding page numbers failed" });
+  }
+});
+
+app.post("/api/tools/pdf-info", authOptional, checkToolLimit, upload.single("pdf"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "PDF required" });
+
+    const pdf = await PDFDocument.load(fs.readFileSync(req.file.path));
+
+    await logToolUsage(req, "pdf-info");
+
+    const info = {
+      pages: pdf.getPageCount(),
+      title: pdf.getTitle() || null,
+      author: pdf.getAuthor() || null,
+      subject: pdf.getSubject() || null,
+      producer: pdf.getProducer() || null,
+      creator: pdf.getCreator() || null
+    };
+
+    safeDelete(req.file.path);
+
+    res.json(info);
+  } catch {
+    safeDelete(req.file?.path);
+    res.status(500).json({ error: "PDF info failed" });
+  }
+});
+
+app.post("/api/tools/image-to-pdf", authOptional, checkToolLimit, upload.array("images", 20), async (req, res) => {
+  let outputPath;
+
+  try {
+    if (!req.files || !req.files.length) return res.status(400).json({ error: "Images required" });
 
     const pdf = await PDFDocument.create();
 
     for (const file of req.files) {
-      const imageBytes = fs.readFileSync(file.path);
-      const ext = file.originalname.toLowerCase();
-
-      let img;
-      if (ext.endsWith(".png")) img = await pdf.embedPng(imageBytes);
-      else img = await pdf.embedJpg(await sharp(file.path).jpeg().toBuffer());
-
+      const jpgBuffer = await sharp(file.path).rotate().jpeg().toBuffer();
+      const img = await pdf.embedJpg(jpgBuffer);
       const page = pdf.addPage([img.width, img.height]);
       page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
     }
 
-    const out = await pdf.save();
     outputPath = path.join(uploadDir, `images-${Date.now()}.pdf`);
-    fs.writeFileSync(outputPath, out);
+    fs.writeFileSync(outputPath, await pdf.save());
 
     await logToolUsage(req, "image-to-pdf");
     await saveFileHistory(req, "image-to-pdf", "images", "images.pdf");
 
-    req.files.forEach(file => safeDelete(file.path));
+    req.files.forEach(f => safeDelete(f.path));
 
-    res.download(outputPath, "images.pdf", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "images.pdf");
   } catch {
-    req.files?.forEach(file => safeDelete(file.path));
+    req.files?.forEach(f => safeDelete(f.path));
     safeDelete(outputPath);
     res.status(500).json({ error: "Image to PDF failed" });
   }
 });
 
-app.post("/api/tools/pdf-to-word", authOptional, upload.single("pdf"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "PDF to Word needs a conversion engine/API such as CloudConvert, ConvertAPI, or LibreOffice server."
-  });
-});
-
-app.post("/api/tools/word-to-pdf", authOptional, upload.single("word"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "Word to PDF needs LibreOffice/CloudConvert/ConvertAPI. Endpoint is ready for integration."
-  });
-});
-
-app.post("/api/tools/pdf-to-image", authOptional, upload.single("pdf"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "PDF to Image needs Poppler/Ghostscript or an external API. Endpoint is ready."
-  });
-});
-
 /* IMAGE TOOLS */
 
-app.post("/api/tools/image-compress", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-compress", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
@@ -562,12 +883,12 @@ app.post("/api/tools/image-compress", authOptional, upload.single("image"), asyn
 
     await sharp(req.file.path).rotate().jpeg({ quality }).toFile(outputPath);
 
-    await logToolUsage(req, "image-compressor");
+    await logToolUsage(req, "image-compressor", req.file.size);
     await saveFileHistory(req, "image-compressor", req.file.originalname, "compressed-image.jpg");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "compressed-image.jpg", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "compressed-image.jpg");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -575,8 +896,9 @@ app.post("/api/tools/image-compress", authOptional, upload.single("image"), asyn
   }
 });
 
-app.post("/api/tools/image-resize", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-resize", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
@@ -591,12 +913,12 @@ app.post("/api/tools/image-resize", authOptional, upload.single("image"), async 
       .jpeg({ quality: 85 })
       .toFile(outputPath);
 
-    await logToolUsage(req, "image-resizer");
+    await logToolUsage(req, "image-resizer", req.file.size);
     await saveFileHistory(req, "image-resizer", req.file.originalname, "resized-image.jpg");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "resized-image.jpg", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "resized-image.jpg");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -604,26 +926,25 @@ app.post("/api/tools/image-resize", authOptional, upload.single("image"), async 
   }
 });
 
-app.post("/api/tools/image-convert", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-convert", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
-    const format = ["png", "jpg", "jpeg", "webp"].includes(req.body.format)
-      ? req.body.format
-      : "png";
+    const format = ["png", "jpg", "jpeg", "webp"].includes(req.body.format) ? req.body.format : "png";
+    const sharpFormat = format === "jpg" ? "jpeg" : format;
 
-    const ext = format === "jpg" ? "jpeg" : format;
     outputPath = path.join(uploadDir, `converted-${Date.now()}.${format}`);
 
-    await sharp(req.file.path).rotate().toFormat(ext).toFile(outputPath);
+    await sharp(req.file.path).rotate().toFormat(sharpFormat).toFile(outputPath);
 
-    await logToolUsage(req, "image-converter");
+    await logToolUsage(req, "image-converter", req.file.size);
     await saveFileHistory(req, "image-converter", req.file.originalname, `converted.${format}`);
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, `converted.${format}`, () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, `converted.${format}`);
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -631,8 +952,9 @@ app.post("/api/tools/image-convert", authOptional, upload.single("image"), async
   }
 });
 
-app.post("/api/tools/image-crop", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-crop", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
@@ -643,17 +965,14 @@ app.post("/api/tools/image-crop", authOptional, upload.single("image"), async (r
 
     outputPath = path.join(uploadDir, `cropped-${Date.now()}.png`);
 
-    await sharp(req.file.path)
-      .extract({ left, top, width, height })
-      .png()
-      .toFile(outputPath);
+    await sharp(req.file.path).rotate().extract({ left, top, width, height }).png().toFile(outputPath);
 
-    await logToolUsage(req, "image-cropper");
+    await logToolUsage(req, "image-cropper", req.file.size);
     await saveFileHistory(req, "image-cropper", req.file.originalname, "cropped.png");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "cropped.png", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "cropped.png");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -661,15 +980,16 @@ app.post("/api/tools/image-crop", authOptional, upload.single("image"), async (r
   }
 });
 
-app.post("/api/tools/image-watermark", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-watermark", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
-    const text = req.body.text || "SmartTools";
+    const text = (req.body.text || "SmartTools").replace(/[<>&]/g, "");
     const svg = `
-      <svg width="800" height="200">
-        <text x="30" y="100" font-size="60" fill="white" opacity="0.7" font-family="Arial">${text}</text>
+      <svg width="1000" height="250">
+        <text x="30" y="120" font-size="70" fill="white" opacity="0.75" font-family="Arial">${text}</text>
       </svg>
     `;
 
@@ -681,12 +1001,12 @@ app.post("/api/tools/image-watermark", authOptional, upload.single("image"), asy
       .png()
       .toFile(outputPath);
 
-    await logToolUsage(req, "image-watermark");
+    await logToolUsage(req, "image-watermark", req.file.size);
     await saveFileHistory(req, "image-watermark", req.file.originalname, "watermarked.png");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "watermarked.png", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "watermarked.png");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -694,8 +1014,9 @@ app.post("/api/tools/image-watermark", authOptional, upload.single("image"), asy
   }
 });
 
-app.post("/api/tools/image-effect", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/image-effect", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
@@ -704,17 +1025,19 @@ app.post("/api/tools/image-effect", authOptional, upload.single("image"), async 
 
     if (effect === "blur") pipeline = pipeline.blur(Number(req.body.amount || 5));
     if (effect === "sharpen") pipeline = pipeline.sharpen();
+    if (effect === "grayscale") pipeline = pipeline.grayscale();
+    if (effect === "flip") pipeline = pipeline.flip();
+    if (effect === "flop") pipeline = pipeline.flop();
 
     outputPath = path.join(uploadDir, `effect-${Date.now()}.png`);
-
     await pipeline.png().toFile(outputPath);
 
-    await logToolUsage(req, `image-${effect}`);
+    await logToolUsage(req, `image-${effect}`, req.file.size);
     await saveFileHistory(req, `image-${effect}`, req.file.originalname, "effect.png");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "effect.png", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "effect.png");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -722,15 +1045,62 @@ app.post("/api/tools/image-effect", authOptional, upload.single("image"), async 
   }
 });
 
-app.post("/api/tools/background-changer", authOptional, upload.single("image"), async (req, res) => {
+app.post("/api/tools/background-remove-color", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
   let outputPath;
+
+  try {
+    if (!req.file) return res.status(400).json({ error: "Image required" });
+
+    const color = req.body.color || "#ffffff";
+    const threshold = Math.min(Math.max(Number(req.body.threshold || 40), 1), 255);
+
+    const hex = color.replace("#", "");
+    const target = {
+      r: parseInt(hex.slice(0, 2), 16),
+      g: parseInt(hex.slice(2, 4), 16),
+      b: parseInt(hex.slice(4, 6), 16)
+    };
+
+    const img = sharp(req.file.path).rotate().ensureAlpha();
+    const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
+
+    for (let i = 0; i < data.length; i += 4) {
+      const dr = Math.abs(data[i] - target.r);
+      const dg = Math.abs(data[i + 1] - target.g);
+      const db = Math.abs(data[i + 2] - target.b);
+
+      if (dr + dg + db < threshold * 3) {
+        data[i + 3] = 0;
+      }
+    }
+
+    outputPath = path.join(uploadDir, `bg-removed-${Date.now()}.png`);
+
+    await sharp(data, {
+      raw: { width: info.width, height: info.height, channels: 4 }
+    }).png().toFile(outputPath);
+
+    await logToolUsage(req, "background-remove-color", req.file.size);
+    await saveFileHistory(req, "background-remove-color", req.file.originalname, "background-removed.png");
+
+    safeDelete(req.file.path);
+
+    downloadAndClean(res, outputPath, "background-removed.png");
+  } catch {
+    safeDelete(req.file?.path);
+    safeDelete(outputPath);
+    res.status(500).json({ error: "Background removal failed. Use images with solid backgrounds." });
+  }
+});
+
+app.post("/api/tools/background-changer", authOptional, checkToolLimit, upload.single("image"), async (req, res) => {
+  let outputPath;
+
   try {
     if (!req.file) return res.status(400).json({ error: "Image required" });
 
     const color = req.body.color || "#ffffff";
     const metadata = await sharp(req.file.path).metadata();
-
-    outputPath = path.join(uploadDir, `background-${Date.now()}.png`);
 
     const bg = await sharp({
       create: {
@@ -741,17 +1111,16 @@ app.post("/api/tools/background-changer", authOptional, upload.single("image"), 
       }
     }).png().toBuffer();
 
-    await sharp(bg)
-      .composite([{ input: req.file.path }])
-      .png()
-      .toFile(outputPath);
+    outputPath = path.join(uploadDir, `background-${Date.now()}.png`);
 
-    await logToolUsage(req, "background-changer");
+    await sharp(bg).composite([{ input: req.file.path }]).png().toFile(outputPath);
+
+    await logToolUsage(req, "background-changer", req.file.size);
     await saveFileHistory(req, "background-changer", req.file.originalname, "background-changed.png");
 
     safeDelete(req.file.path);
 
-    res.download(outputPath, "background-changed.png", () => safeDelete(outputPath));
+    downloadAndClean(res, outputPath, "background-changed.png");
   } catch {
     safeDelete(req.file?.path);
     safeDelete(outputPath);
@@ -759,23 +1128,9 @@ app.post("/api/tools/background-changer", authOptional, upload.single("image"), 
   }
 });
 
-app.post("/api/tools/background-remover", authOptional, upload.single("image"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "Background remover needs remove.bg, Clipdrop, PhotoRoom, or an AI model. Endpoint is ready for API integration."
-  });
-});
+/* ARCHIVE */
 
-app.post("/api/tools/image-upscale", authOptional, upload.single("image"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "AI upscaler needs an AI model/API. Endpoint is ready for integration."
-  });
-});
-
-/* ARCHIVE TOOLS */
-
-app.post("/api/tools/zip-extract", authOptional, upload.single("zip"), async (req, res) => {
+app.post("/api/tools/zip-extract", authOptional, checkToolLimit, upload.single("zip"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "ZIP required" });
 
@@ -786,7 +1141,8 @@ app.post("/api/tools/zip-extract", authOptional, upload.single("zip"), async (re
       isDirectory: e.isDirectory
     }));
 
-    await logToolUsage(req, "zip-extractor");
+    await logToolUsage(req, "zip-extractor", req.file.size);
+
     safeDelete(req.file.path);
 
     res.json({ entries });
@@ -796,8 +1152,9 @@ app.post("/api/tools/zip-extract", authOptional, upload.single("zip"), async (re
   }
 });
 
-app.post("/api/tools/file-compress", authOptional, upload.array("files", 20), async (req, res) => {
+app.post("/api/tools/file-compress", authOptional, checkToolLimit, upload.array("files", 30), async (req, res) => {
   let outputPath;
+
   try {
     if (!req.files || !req.files.length) return res.status(400).json({ error: "Files required" });
 
@@ -811,14 +1168,14 @@ app.post("/api/tools/file-compress", authOptional, upload.array("files", 20), as
       archive.file(file.path, { name: file.originalname });
     });
 
-    await archive.finalize();
-
     output.on("close", async () => {
       await logToolUsage(req, "file-compressor");
+      await saveFileHistory(req, "file-compressor", "multiple files", "compressed-files.zip");
       req.files.forEach(file => safeDelete(file.path));
-
-      res.download(outputPath, "compressed-files.zip", () => safeDelete(outputPath));
+      downloadAndClean(res, outputPath, "compressed-files.zip");
     });
+
+    await archive.finalize();
   } catch {
     req.files?.forEach(file => safeDelete(file.path));
     safeDelete(outputPath);
@@ -826,27 +1183,9 @@ app.post("/api/tools/file-compress", authOptional, upload.array("files", 20), as
   }
 });
 
-app.post("/api/tools/file-converter", authOptional, upload.single("file"), async (req, res) => {
-  safeDelete(req.file?.path);
-  res.status(501).json({
-    error: "Universal file conversion needs CloudConvert/ConvertAPI. Endpoint is ready."
-  });
-});
+/* TEXT / DEV / UTILITY */
 
-/* UTILITY + DEV TOOLS */
-
-app.post("/api/tools/qr", authOptional, async (req, res) => {
-  const { text } = req.body;
-  if (!text) return res.status(400).json({ error: "Text required" });
-
-  const qrImage = await QRCode.toDataURL(text, { width: 350, margin: 2 });
-
-  await logToolUsage(req, "qr-generator");
-
-  res.json({ qrImage });
-});
-
-app.post("/api/tools/password", authOptional, async (req, res) => {
+app.post("/api/tools/password", authOptional, checkToolLimit, async (req, res) => {
   const length = Math.min(Math.max(Number(req.body.length || 16), 4), 64);
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=";
 
@@ -858,7 +1197,18 @@ app.post("/api/tools/password", authOptional, async (req, res) => {
   res.json({ password });
 });
 
-app.post("/api/tools/hash", authOptional, async (req, res) => {
+app.post("/api/tools/qr", authOptional, checkToolLimit, async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: "Text required" });
+
+  const qrImage = await QRCode.toDataURL(text, { width: 350, margin: 2 });
+
+  await logToolUsage(req, "qr-generator");
+
+  res.json({ qrImage });
+});
+
+app.post("/api/tools/hash", authOptional, checkToolLimit, async (req, res) => {
   const text = req.body.text || "";
   const algorithm = req.body.algorithm || "sha256";
 
@@ -873,7 +1223,37 @@ app.post("/api/tools/hash", authOptional, async (req, res) => {
   res.json({ hash });
 });
 
-app.post("/api/tools/api-tester", authOptional, async (req, res) => {
+app.post("/api/tools/text-stats", authOptional, checkToolLimit, async (req, res) => {
+  const text = req.body.text || "";
+
+  await logToolUsage(req, "text-stats");
+
+  res.json({
+    words: text.trim() ? text.trim().split(/\s+/).length : 0,
+    characters: text.length,
+    charactersNoSpaces: text.replace(/\s/g, "").length,
+    sentences: text.split(/[.!?]+/).filter(s => s.trim()).length,
+    paragraphs: text.split(/\n+/).filter(p => p.trim()).length,
+    readingTime: Math.ceil((text.trim() ? text.trim().split(/\s+/).length : 0) / 200)
+  });
+});
+
+app.post("/api/tools/case-converter", authOptional, checkToolLimit, async (req, res) => {
+  const text = req.body.text || "";
+  const mode = req.body.mode || "upper";
+  let output = text;
+
+  if (mode === "upper") output = text.toUpperCase();
+  if (mode === "lower") output = text.toLowerCase();
+  if (mode === "title") output = text.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  if (mode === "sentence") output = text.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
+
+  await logToolUsage(req, "case-converter");
+
+  res.json({ output });
+});
+
+app.post("/api/tools/api-tester", authOptional, requirePremium, async (req, res) => {
   try {
     const { method, url, body, headers } = req.body;
 
@@ -902,6 +1282,8 @@ app.post("/api/tools/api-tester", authOptional, async (req, res) => {
   }
 });
 
+/* FEEDBACK */
+
 app.post("/api/feedback", authOptional, async (req, res) => {
   const { name, email, message } = req.body;
 
@@ -913,6 +1295,33 @@ app.post("/api/feedback", authOptional, async (req, res) => {
   );
 
   res.json({ message: "Feedback sent successfully" });
+});
+
+/* ADMIN */
+
+app.get("/api/admin/stats", authRequired, async (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+  const [[users]] = await db.query("SELECT COUNT(*) AS total FROM users");
+  const [[premium]] = await db.query("SELECT COUNT(*) AS total FROM users WHERE plan='premium'");
+  const [[usage]] = await db.query("SELECT COUNT(*) AS total FROM tool_usage");
+  const [[payments]] = await db.query("SELECT COUNT(*) AS total FROM payments WHERE status='success'");
+
+  const [popularTools] = await db.query(`
+    SELECT tool_name, COUNT(*) AS total
+    FROM tool_usage
+    GROUP BY tool_name
+    ORDER BY total DESC
+    LIMIT 15
+  `);
+
+  res.json({
+    users: users.total,
+    premiumUsers: premium.total,
+    toolUsage: usage.total,
+    successfulPayments: payments.total,
+    popularTools
+  });
 });
 
 app.use("/api", (req, res) => {
